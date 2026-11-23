@@ -1,0 +1,34 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "lawvault",
+      "runtimeExecutable": ".venv/bin/streamlit",
+      "runtimeArgs": [
+        "run",
+        "app.py",
+        "--server.headless",
+        "true",
+        "--server.port",
+        "8502"
+      ],
+      "port": 8502
+    },
+    {
+      "name": "lawvault-demo",
+      "runtimeExecutable": "/usr/bin/env",
+      "runtimeArgs": [
+        "DEV_MODE=1",
+        "LAWVAULT_DATA_DIR=/Users/jehuda/UAS Htek LawVault/data-demo",
+        ".venv/bin/streamlit",
+        "run",
+        "app.py",
+        "--server.headless",
+        "true",
+        "--server.port",
+        "8502"
+      ],
+      "port": 8502
+    }
+  ]
+}

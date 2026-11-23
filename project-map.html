@@ -1,0 +1,279 @@
+<title>LawVault Project Map</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column; status strip → requirement map → architecture → journey → your checklist → run */
+:root{
+  --bg:#f5f6f8; --surface:#ffffff; --ink:#18202e; --muted:#5b6475; --line:#dde1e8;
+  --accent:#8a6a1f; --accent-soft:#f3ecdc;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea; --todo:#9a5b00; --todo-soft:#fdf0d9;
+  --font-display:"Space Grotesk",system-ui,sans-serif;
+  --font-body:"Inter",system-ui,-apple-system,sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11151d; --surface:#181e29; --ink:#e6e9ef; --muted:#9aa3b5; --line:#2a3242;
+  --accent:#d8b45e; --accent-soft:#2b2516; --ok:#5fcf95; --ok-soft:#15281f; --todo:#f0b45a; --todo-soft:#2c2213; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11151d; --surface:#181e29; --ink:#e6e9ef; --muted:#9aa3b5; --line:#2a3242;
+  --accent:#d8b45e; --accent-soft:#2b2516; --ok:#5fcf95; --ok-soft:#15281f; --todo:#f0b45a; --todo-soft:#2c2213; color-scheme:dark}
+
+body{background:var(--bg);color:var(--ink);font:15px/1.6 var(--font-body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 64px}
+.wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:40px}
+h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0;line-height:1.2}
+h1{font-size:2.1rem} h2{font-size:1.35rem} h3{font-size:1rem}
+p{margin:0;max-width:68ch}
+.eyebrow{font:500 .72rem var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+code,.mono{font-family:var(--font-mono);font-size:.84em}
+section{display:flex;flex-direction:column;gap:16px}
+.lede{color:var(--muted)}
+
+.status{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:2px}
+.stat b{font:700 1.6rem var(--font-display);font-variant-numeric:tabular-nums}
+.stat span{color:var(--muted);font-size:.85rem}
+
+.chip{display:inline-flex;align-items:center;gap:6px;font:500 .72rem var(--font-mono);padding:2px 8px;border-radius:999px;white-space:nowrap}
+.chip.ok{background:var(--ok-soft);color:var(--ok)} .chip.todo{background:var(--todo-soft);color:var(--todo)}
+.chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+
+.req{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.card header{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.card ul{margin:0;padding-left:18px;color:var(--muted);font-size:.9rem;display:flex;flex-direction:column;gap:3px}
+.card .files{display:flex;flex-wrap:wrap;gap:6px}
+.file{font:400 .74rem var(--font-mono);background:var(--accent-soft);color:var(--accent);padding:2px 7px;border-radius:5px}
+
+.diagram{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;overflow-x:auto}
+.diagram svg{display:block;min-width:720px;width:100%;height:auto}
+.diagram text{font-family:var(--font-body);fill:var(--ink)}
+.diagram .sub{fill:var(--muted);font-size:11px}
+.diagram .box{fill:var(--surface);stroke:var(--line);stroke-width:1.5}
+.diagram .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5}
+.diagram .ext{fill:var(--bg);stroke:var(--muted);stroke-width:1.2;stroke-dasharray:4 3}
+.diagram .edge{stroke:var(--muted);stroke-width:1.4;fill:none}
+.diagram .lbl{fill:var(--muted);font-size:10.5px;font-family:var(--font-mono)}
+
+.journey{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:.88rem}
+.step small{display:block;color:var(--muted);font-size:.75rem}
+.arrow{color:var(--muted)}
+
+.checklist{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.checklist label{display:flex;gap:12px;align-items:flex-start;padding:12px 16px;border-top:1px solid var(--line);cursor:pointer}
+.checklist label:first-child{border-top:0}
+.checklist input{margin-top:4px;accent-color:var(--accent);width:16px;height:16px;flex:none}
+.checklist input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.checklist input:checked + div{opacity:.55;text-decoration:line-through}
+.checklist div small{display:block;color:var(--muted)}
+.progress{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+
+pre.cmd{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;margin:0;font:400 .82rem/1.7 var(--font-mono)}
+pre.cmd .c{color:var(--muted)}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+@media (prefers-reduced-motion: reduce){.progress i{transition:none}}
+</style>
+
+<div class="wrap">
+
+<header style="display:flex;flex-direction:column;gap:10px">
+  <span class="eyebrow">Finals project · Streamlit</span>
+  <h1>LawVault project map</h1>
+  <p class="lede">A secure, multi-user workspace for lawyers. Teams discuss cases in an encrypted group chat, share documents, and use AI to analyse contracts. This page tracks what is built, how the pieces connect, and what is left for you.</p>
+</header>
+
+<section aria-label="Status">
+  <div class="status">
+    <div class="stat"><b>15 / 15</b><span>features built</span></div>
+    <div class="stat"><b>94</b><span>tests passing</span></div>
+    <div class="stat"><b>0</b><span>Bandit security issues</span></div>
+    <div class="stat"><b>9</b><span>app pages</span></div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">What you asked for → where it lives</span>
+  <h2>Requirement map</h2>
+  <div class="req">
+    <article class="card"><header><h3>Sign up &amp; login</h3><span class="chip ok">done</span></header>
+      <ul><li>Email + password, consent checkbox</li><li>Password rules and strength meter</li><li>Reset and change password</li></ul>
+      <div class="files"><span class="file">auth.py</span><span class="file">views/auth_ui.py</span></div></article>
+    <article class="card"><header><h3>OTP two-step login</h3><span class="chip ok">done</span></header>
+      <ul><li>6-digit code, hashed, 5-minute expiry, single use</li><li>5 tries per code, resend cooldown, 5 per hour</li><li>Dev mode shows code on screen, real mode emails it</li></ul>
+      <div class="files"><span class="file">otp.py</span></div></article>
+    <article class="card"><header><h3>Security measures</h3><span class="chip ok">done</span></header>
+      <ul><li>bcrypt passwords, lockout after 5 failures</li><li>Session timeouts, log out all devices</li><li>No SQL injection, no account enumeration, audit log</li></ul>
+      <div class="files"><span class="file">crypto.py</span><span class="file">db.py</span><span class="file">config.py</span></div></article>
+    <article class="card"><header><h3>Multi-user</h3><span class="chip ok">done</span></header>
+      <ul><li>Shared database, everyone sees only their own data</li><li>Every case action checks membership on the server</li><li>User and admin roles</li></ul>
+      <div class="files"><span class="file">cases.py</span><span class="file">views/admin.py</span></div></article>
+    <article class="card"><header><h3>Lawyer group chat</h3><span class="chip ok">done</span></header>
+      <ul><li>Case rooms: owner invites lawyers by email</li><li>Live chat refreshes every 3 seconds</li><li>Shared case documents, remove members, delete case</li></ul>
+      <div class="files"><span class="file">cases.py</span><span class="file">views/cases_ui.py</span></div></article>
+    <article class="card"><header><h3>Team AI</h3><span class="chip todo">needs your key</span></header>
+      <ul><li>Summarize this case: briefing from chat, documents, deadlines</li><li><code>@ai</code> in the team chat, with the answer posted for everyone</li><li>Find deadlines in a contract and add them to the case or your calendar</li></ul>
+      <div class="files"><span class="file">ai.py</span><span class="file">views/cases_ui.py</span></div></article>
+    <article class="card"><header><h3>Stay logged in on refresh</h3><span class="chip ok">done · new</span></header>
+      <ul><li>Hashed session token in a SameSite=Strict cookie</li><li>Same idle and absolute timeouts still apply</li><li>Logging out makes the cookie useless right away</li></ul>
+      <div class="files"><span class="file">session_cookie.py</span><span class="file">app.py</span></div></article>
+    <article class="card"><header><h3>Authenticator app (optional)</h3><span class="chip ok">done · new</span></header>
+      <ul><li>QR setup for Google Authenticator, Authy and others</li><li>Replaces the email code once turned on</li><li>Each code works once; wrong codes count toward lockout; admin can reset a lost phone</li></ul>
+      <div class="files"><span class="file">twofa.py</span><span class="file">views/account.py</span></div></article>
+    <article class="card"><header><h3>Status &amp; devices</h3><span class="chip ok">done · new</span></header>
+      <ul><li>Discord-style status: 🟢 Online, 🟡 Idle (automatic), 🔴 Do Not Disturb, ⚫ Invisible</li><li>List of logged-in devices; log out one or all</li><li>Alert when you log in from a new device</li></ul>
+      <div class="files"><span class="file">presence.py</span><span class="file">auth.py</span></div></article>
+    <article class="card"><header><h3>Notifications</h3><span class="chip ok">done · new</span></header>
+      <ul><li>🔔 bell with an unread count, plus pop-ups</li><li>Messages, @mentions, invites, calendar requests, tasks, security alerts</li><li>Chat messages grouped; Do Not Disturb silences pop-ups</li></ul>
+      <div class="files"><span class="file">notify.py</span><span class="file">views/notifications_ui.py</span></div></article>
+    <article class="card"><header><h3>Roles, deadlines &amp; tasks</h3><span class="chip ok">done · new</span></header>
+      <ul><li>Case roles: owner, editor, viewer (read-only)</li><li>Court deadlines and tasks with assignees</li><li>Shown on calendars and the dashboard; overdue items flagged</li></ul>
+      <div class="files"><span class="file">cases.py</span><span class="file">views/dashboard.py</span></div></article>
+    <article class="card"><header><h3>Extra hardening</h3><span class="chip ok">done · new</span></header>
+      <ul><li>Breached-password check (Have I Been Pwned, k-anonymity)</li><li>Bandit scan clean; GitHub Actions runs tests and scan</li><li>Theme and logo; 5 MB upload cap and XSRF protection in config</li></ul>
+      <div class="files"><span class="file">security_checks.py</span><span class="file">.github/workflows/ci.yml</span></div></article>
+    <article class="card"><header><h3>Shared calendars</h3><span class="chip ok">done</span></header>
+      <ul><li>Everyone has a private calendar by default</li><li>Toggle: private, busy only, or titles visible to case teammates</li><li>Request a colleague's calendar; they approve, downgrade, deny or revoke</li><li>Find a time when everyone is free, then send invites to accept or decline</li></ul>
+      <div class="files"><span class="file">cal.py</span><span class="file">views/calendar_ui.py</span></div></article>
+    <article class="card"><header><h3>AI (free API)</h3><span class="chip todo">needs your key</span></header>
+      <ul><li>Google Gemini free tier: legal Q&amp;A and contract analysis</li><li>Prompt-injection defence, PII masked before sending</li><li>Quota refunded if the AI call fails</li></ul>
+      <div class="files"><span class="file">ai.py</span><span class="file">views/ai_ui.py</span></div></article>
+    <article class="card"><header><h3>Subscription</h3><span class="chip ok">done</span></header>
+      <ul><li>Free / Pro / Firm plans with limits</li><li>Daily AI quota, case, doc and member caps</li><li>Mock checkout (no card data), plan expiry</li></ul>
+      <div class="files"><span class="file">subscription.py</span><span class="file">views/account.py</span></div></article>
+    <article class="card"><header><h3>User data safety</h3><span class="chip ok">done</span></header>
+      <ul><li>Cases, chat, documents, AI history encrypted at rest</li><li>Admins never see content</li><li>Export my data, delete my account, privacy policy</li></ul>
+      <div class="files"><span class="file">privacy.py</span><span class="file">crypto.py</span><span class="file">docutil.py</span></div></article>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">How the pieces connect</span>
+  <h2>Architecture</h2>
+  <p class="lede">The browser only talks to Streamlit pages. Pages never touch the database directly for case data: they go through the logic modules, which check permissions and encrypt or decrypt.</p>
+  <div class="diagram">
+    <svg viewBox="0 0 900 400" role="img" aria-label="Architecture: browsers connect to Streamlit pages, which call logic modules, which use the encrypted SQLite database and external Gemini and email services">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs>
+      <!-- users -->
+      <rect class="box" x="20" y="40" width="150" height="54" rx="8"/><text x="95" y="63" text-anchor="middle" font-weight="600">Lawyer A</text><text x="95" y="80" text-anchor="middle" class="sub">browser tab</text>
+      <rect class="box" x="20" y="110" width="150" height="54" rx="8"/><text x="95" y="133" text-anchor="middle" font-weight="600">Lawyer B</text><text x="95" y="150" text-anchor="middle" class="sub">browser tab</text>
+      <rect class="box" x="20" y="180" width="150" height="54" rx="8"/><text x="95" y="203" text-anchor="middle" font-weight="600">Admin</text><text x="95" y="220" text-anchor="middle" class="sub">metadata only</text>
+      <!-- app -->
+      <rect class="hl" x="230" y="30" width="190" height="214" rx="10"/>
+      <text x="325" y="56" text-anchor="middle" font-weight="700">app.py</text>
+      <text x="325" y="74" text-anchor="middle" class="sub">session check → pages</text>
+      <text x="250" y="104" class="sub">Login + OTP</text><text x="250" y="124" class="sub">Dashboard</text>
+      <text x="250" y="144" class="sub">Cases &amp; team chat · Calendar</text><text x="250" y="164" class="sub">Legal Q&amp;A · Analyzer</text>
+      <text x="250" y="184" class="sub">Account · Privacy</text><text x="250" y="204" class="sub">Admin</text>
+      <text x="325" y="232" text-anchor="middle" class="lbl">views/</text>
+      <!-- modules -->
+      <rect class="box" x="480" y="30" width="180" height="40" rx="7"/><text x="570" y="55" text-anchor="middle">auth · otp</text>
+      <rect class="box" x="480" y="80" width="180" height="40" rx="7"/><text x="570" y="105" text-anchor="middle">cases (membership check)</text>
+      <rect class="box" x="480" y="130" width="180" height="40" rx="7"/><text x="570" y="155" text-anchor="middle">cal (sharing rules) · plans</text>
+      <rect class="box" x="480" y="180" width="180" height="40" rx="7"/><text x="570" y="205" text-anchor="middle">ai · privacy</text>
+      <rect class="hl" x="480" y="230" width="180" height="40" rx="7"/><text x="570" y="255" text-anchor="middle" font-weight="600">crypto (encrypt / hash)</text>
+      <!-- storage + external -->
+      <rect class="hl" x="720" y="230" width="160" height="70" rx="8"/><text x="800" y="258" text-anchor="middle" font-weight="700">SQLite</text><text x="800" y="276" text-anchor="middle" class="sub">encrypted content</text><text x="800" y="290" text-anchor="middle" class="sub">data/lawvault.db</text>
+      <rect class="ext" x="720" y="160" width="160" height="50" rx="8"/><text x="800" y="182" text-anchor="middle" font-weight="600">Gemini API</text><text x="800" y="199" text-anchor="middle" class="sub">free tier, PII masked</text>
+      <rect class="ext" x="720" y="30" width="160" height="50" rx="8"/><text x="800" y="52" text-anchor="middle" font-weight="600">Email (SMTP)</text><text x="800" y="69" text-anchor="middle" class="sub">OTP codes</text>
+      <rect class="ext" x="230" y="300" width="190" height="56" rx="8"/><text x="325" y="324" text-anchor="middle" font-weight="600">.env secrets</text><text x="325" y="342" text-anchor="middle" class="sub">keys, never in git</text>
+      <!-- edges -->
+      <path class="edge" d="M170 67 H230" marker-end="url(#ar)"/><path class="edge" d="M170 137 H230" marker-end="url(#ar)"/><path class="edge" d="M170 207 H230" marker-end="url(#ar)"/>
+      <path class="edge" d="M420 50 H480" marker-end="url(#ar)"/><path class="edge" d="M420 100 H480" marker-end="url(#ar)"/>
+      <path class="edge" d="M420 150 H480" marker-end="url(#ar)"/><path class="edge" d="M420 200 H480" marker-end="url(#ar)"/>
+      <path class="edge" d="M570 220 V230" marker-end="url(#ar)"/>
+      <path class="edge" d="M660 250 H720" marker-end="url(#ar)"/>
+      <path class="edge" d="M660 195 Q690 190 720 186" marker-end="url(#ar)"/><text x="664" y="182" class="lbl">HTTPS</text>
+      <path class="edge" d="M660 50 H720" marker-end="url(#ar)"/>
+      <path class="edge" d="M325 300 V244" marker-end="url(#ar)"/>
+      <text x="480" y="300" class="lbl">every case query filtered by user</text>
+      <text x="480" y="316" class="lbl">→ Lawyer B can't see A's private cases</text>
+    </svg>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">What a user does</span>
+  <h2>User journey</h2>
+  <div class="journey">
+    <div class="step">Sign up<small>strong password + consent</small></div><span class="arrow">→</span>
+    <div class="step">Log in<small>password check</small></div><span class="arrow">→</span>
+    <div class="step">Enter OTP<small>6 digits, 5 minutes</small></div><span class="arrow">→</span>
+    <div class="step">Dashboard<small>plan + usage</small></div><span class="arrow">→</span>
+    <div class="step">Create case<small>invite lawyers</small></div><span class="arrow">→</span>
+    <div class="step">Team chat + docs<small>encrypted</small></div><span class="arrow">→</span>
+    <div class="step">@ai + summary<small>team AI</small></div><span class="arrow">→</span>
+    <div class="step">Deadlines<small>on every calendar</small></div><span class="arrow">→</span>
+    <div class="step">Find a time<small>shared calendars</small></div><span class="arrow">→</span>
+    <div class="step">AI analysis<small>uses daily quota</small></div><span class="arrow">→</span>
+    <div class="step">Upgrade plan<small>more quota</small></div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Your turn</span>
+  <h2>Remaining checklist</h2>
+  <p class="lede">Ticks are saved in this browser only.</p>
+  <div class="progress" aria-hidden="true"><i id="bar"></i></div>
+  <div class="checklist" id="list">
+    <label><input type="checkbox" id="t1"><div>Get a free Gemini API key<small>aistudio.google.com → paste into <code>GEMINI_API_KEY</code> in <code>.env</code>, then restart the app</small></div></label>
+    <label><input type="checkbox" id="t2"><div>Try the app yourself with the demo accounts<small>Open two browsers (or one private window) as admin and partner to see the live chat</small></div></label>
+    <label><input type="checkbox" id="t8"><div>Try the calendar<small>As admin: Calendar → Team calendars (partner shows "Busy" only), Find a time, Invites, and Sharing (a request is waiting)</small></div></label>
+    <label><input type="checkbox" id="t3"><div>Optional: turn on real email OTP<small>Set <code>DEV_MODE=0</code> and a Gmail app password in <code>SMTP_*</code></small></div></label>
+    <label><input type="checkbox" id="t4"><div>Run the test suite in front of the examiner<small><code>python -m pytest tests -q</code> → 94 passed</small></div></label>
+    <label><input type="checkbox" id="t9"><div>Rehearse the demo<small>Follow <code>DEMO_SCRIPT.md</code>: two browser windows, about 3 minutes</small></div></label>
+    <label><input type="checkbox" id="t10"><div>Put the project on GitHub<small>CI then runs the 94 tests and the Bandit scan automatically on every push</small></div></label>
+    <label><input type="checkbox" id="t5"><div>Write the report<small>Use the README's security table and its "Known limitations" section</small></div></label>
+    <label><input type="checkbox" id="t6"><div>Optional: deploy to Streamlit Community Cloud<small>Free HTTPS; put the .env values in the app's Secrets</small></div></label>
+    <label><input type="checkbox" id="t7"><div>Check your exam rubric against the requirement map above<small>Tell Claude about anything missing</small></div></label>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Commands</span>
+  <h2>Run it</h2>
+  <div class="two">
+    <pre class="cmd"><span class="c"># first time</span>
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+python seed_demo.py</pre>
+    <pre class="cmd"><span class="c"># every time</span>
+streamlit run app.py
+
+<span class="c"># tests</span>
+python -m pytest tests -q</pre>
+  </div>
+  <p class="lede">Demo logins: <span class="mono">admin@lawvault.test</span>, <span class="mono">partner@lawvault.test</span>, <span class="mono">associate@lawvault.test</span>. The password is in <span class="mono">seed_demo.py</span>.</p>
+</section>
+
+<section>
+  <span class="eyebrow">For the examiner</span>
+  <h2>Honest limitations</h2>
+  <div class="req">
+    <div class="card"><h3>One encryption key</h3><p class="lede">Whoever holds the server key can decrypt. Upgrade: per-user keys derived from passwords.</p></div>
+    <div class="card"><h3>Free AI tier</h3><p class="lede">May keep prompts. For privileged material, use a paid no-training tier or a local model.</p></div>
+    <div class="card"><h3>Cookie isn't HttpOnly</h3><p class="lede">Streamlit can't set HttpOnly cookies without a reverse proxy. It's SameSite=Strict, and the token stops working when the session ends.</p></div>
+    <div class="card"><h3>Polling, not push</h3><p class="lede">Chat, status and notifications refresh every 3 to 30 seconds instead of updating instantly.</p></div>
+    <div class="card"><h3>Mock checkout</h3><p class="lede">Real payments would use Stripe Checkout and a webhook.</p></div>
+    <div class="card"><h3>Calendar times</h3><p class="lede">Event titles are encrypted, but times are not, so free/busy can be computed. All times use the server's time zone.</p></div>
+  </div>
+</section>
+
+</div>
+
+<script>
+(function(){
+  var boxes=[].slice.call(document.querySelectorAll('#list input'));
+  var bar=document.getElementById('bar');
+  function load(){try{return JSON.parse(localStorage.getItem('lawvault-checklist')||'{}')}catch(e){return {}}}
+  function save(s){try{localStorage.setItem('lawvault-checklist',JSON.stringify(s))}catch(e){}}
+  var state=load();
+  function render(){var n=boxes.filter(function(b){return b.checked}).length;bar.style.width=(n/boxes.length*100)+'%'}
+  boxes.forEach(function(b){b.checked=!!state[b.id];b.addEventListener('change',function(){state[b.id]=b.checked;save(state);render()})});
+  render();
+})();
+</script>

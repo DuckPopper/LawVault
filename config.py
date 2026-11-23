@@ -1,0 +1,60 @@
+"""Central configuration. Secrets come from environment / .env, never from code."""
+from __future__ import annotations
+import hashlib, os
+from pathlib import Path
+from dotenv import load_dotenv
+
+BASE = Path(__file__).parent
+load_dotenv(BASE / ".env")
+
+DATA_DIR = Path(os.getenv("LAWVAULT_DATA_DIR", str(BASE / "data")))
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+DB_PATH = DATA_DIR / "lawvault.db"
+
+DEV_MODE = os.getenv("DEV_MODE", "1") == "1"
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "").strip().lower()
+HIBP_CHECK = os.getenv("HIBP_CHECK", "1") == "1"
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")  # fast; "thinking" models can take ~50 s
+# Tried in order when the main model is busy (503), rate-limited (429), retired (404) or too slow
+GEMINI_FALLBACK_MODELS = [m.strip() for m in os.getenv(
+    "GEMINI_FALLBACK_MODELS", "gemini-flash-lite-latest,gemini-3.5-flash").split(",") if m.strip()]
+GEMINI_TIMEOUT = int(os.getenv("GEMINI_TIMEOUT", "30"))  # seconds per model before trying the next
+SMTP = dict(
+    host=os.getenv("SMTP_HOST", "smtp.gmail.com"),
+    port=int(os.getenv("SMTP_PORT", "587")),
+    user=os.getenv("SMTP_USER", ""),
+    password=os.getenv("SMTP_PASSWORD", ""),
+)
+
+# Security parameters (one place so they are easy to explain in the exam)
+MAX_FAILED_LOGINS = 5
+LOCKOUT_SECONDS = 15 * 60
+OTP_TTL_SECONDS = 5 * 60
+OTP_MAX_ATTEMPTS = 5
+OTP_RESEND_COOLDOWN = 30
+OTP_MAX_PER_HOUR = 5
+SESSION_IDLE_SECONDS = 30 * 60
+SESSION_MAX_SECONDS = 12 * 3600
+MAX_UPLOAD_MB = int(os.getenv("MAX_UPLOAD_MB", "50"))  # keep .streamlit/config.toml maxUploadSize in step
+MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
+MAX_PDF_PAGES = int(os.getenv("MAX_PDF_PAGES", "500"))
+MAX_AI_INPUT_CHARS = 150_000  # ~40k tokens: fits Gemini comfortably, keeps free-tier calls quick
+
+
+def _load_key() -> bytes:
+    env = os.getenv("APP_ENCRYPTION_KEY")
+    if env:
+        return env.encode()
+    p = DATA_DIR / "app.key"
+    if p.exists():
+        return p.read_bytes().strip()
+    from cryptography.fernet import Fernet
+    key = Fernet.generate_key()
+    p.write_bytes(key)
+    os.chmod(p, 0o600)
+    return key
+
+
+APP_KEY = _load_key()
+HMAC_KEY = hashlib.sha256(b"lawvault-hmac|" + APP_KEY).digest()
