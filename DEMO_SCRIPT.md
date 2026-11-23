@@ -33,6 +33,9 @@
 - **Legal drafting** → Somasi → **Draft it**. *"A complete first draft in the Indonesian format, with placeholders for missing facts."*
 - *"Results are encrypted and shared with the case team; a viewer can read them but not run new ones."*
 
+### 3c. Two languages (20 s)
+- Sidebar → language picker → **Bahasa Indonesia**. *"The whole interface switches, including dates, notifications and the privacy policy; the AI now answers in Indonesian too. The choice is saved per user and offered on the login page."*
+
 ### 4. Calendar (30 s)
 - **Calendar → Team calendars**: the partner shows only "Busy". *"Private by default. You choose busy-only or titles, and only for case teammates."*
 - **Find a time** → pick both people → **Book**. *"Finds a slot where everyone is free and sends invites."*

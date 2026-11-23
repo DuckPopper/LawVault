@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from typing import Optional, Tuple
 import hashlib
-import config, crypto, db, notify, otp, security_checks
+import config, crypto, db, i18n, notify, otp, security_checks
 
 EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
 COMMON = {"password", "password1", "123456789", "1234567890", "qwertyuiop", "letmein123", "iloveyou12",
@@ -36,7 +36,7 @@ def password_strength(pw: str) -> int:
     return s
 
 
-def signup(email: str, password: str, consent: bool) -> Tuple[bool, str]:
+def signup(email: str, password: str, consent: bool, lang: str = "en") -> Tuple[bool, str]:
     email = norm_email(email)
     if not EMAIL_RE.match(email):
         return False, "Enter a valid email address."
@@ -49,8 +49,9 @@ def signup(email: str, password: str, consent: bool) -> Tuple[bool, str]:
     try:
         with db.conn() as c:
             uid = db.uid()
-            c.execute("INSERT INTO users(id,email,pw_hash,role,created_at,consent_at) VALUES(?,?,?,?,?,?)",
-                      (uid, email, crypto.hash_password(password), role, db.now(), db.now()))
+            c.execute("INSERT INTO users(id,email,pw_hash,role,created_at,consent_at,lang) VALUES(?,?,?,?,?,?,?)",
+                      (uid, email, crypto.hash_password(password), role, db.now(), db.now(),
+                       lang if lang in i18n.LANGS else i18n.DEFAULT))
     except Exception:
         # Same message whether or not the email exists (no account enumeration).
         return False, "Could not create account. If you already have one, log in or reset your password."
@@ -175,6 +176,14 @@ def validate_session(token: Optional[str]):
             return None
         c.execute("UPDATE sessions SET last_seen=? WHERE token_hash=?", (t, h))
         return c.execute("SELECT * FROM users WHERE id=?", (s["user_id"],)).fetchone()
+
+
+def set_language(user_id: str, lang: str) -> bool:
+    if lang not in i18n.LANGS:
+        return False
+    with db.conn() as c:
+        c.execute("UPDATE users SET lang=? WHERE id=?", (lang, user_id))
+    return True
 
 
 def logout(token: Optional[str]):

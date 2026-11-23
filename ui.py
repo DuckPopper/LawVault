@@ -5,6 +5,7 @@ All user-supplied text that ends up inside raw HTML must go through `esc()` firs
 from __future__ import annotations
 import html
 import streamlit as st
+from i18n import t
 
 # Design tokens (kept in step with .streamlit/config.toml)
 BG = "#0E1116"
@@ -150,7 +151,14 @@ def html_block(markup: str):
     st.markdown("".join(line.strip() for line in markup.splitlines()), unsafe_allow_html=True)
 
 
+def job_label(j: dict) -> str:
+    """A background job's name in the session language (jobs carry a template + name for the dynamic ones)."""
+    meta = j.get("meta") or {}
+    return t(meta["tpl"], name=meta.get("name", "")) if "tpl" in meta else t(j["label"])
+
+
 def page_header(title: str, subtitle: str = "", eyebrow: str = ""):
+    title, subtitle, eyebrow = t(title), t(subtitle) if subtitle else "", t(eyebrow) if eyebrow else ""
     html_block(f"""<div class="lv-head">
         {f'<div class="lv-eyebrow">{esc(eyebrow)}</div>' if eyebrow else ''}
         <div class="lv-title">{esc(title)}</div>
@@ -159,11 +167,13 @@ def page_header(title: str, subtitle: str = "", eyebrow: str = ""):
 
 
 def section(label: str):
+    label = t(label)
     html_block(f'<div class="lv-section">{esc(label)}</div>')
 
 
 def stat(label: str, value: str, note: str = "", progress: float | None = None) -> str:
     bar = f'<div class="lv-bar"><i style="width:{max(0, min(1, progress)) * 100:.0f}%"></i></div>' if progress is not None else ""
+    label, note = t(label), (t(note) if note else "")
     return (f'<div class="lv-card"><div class="lv-stat-label">{esc(label)}</div>'
             f'<div class="lv-stat-value">{esc(value)}</div>'
             f'{f"<div class=lv-stat-note>{esc(note)}</div>" if note else ""}{bar}</div>')

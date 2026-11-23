@@ -1,7 +1,8 @@
 """Calendar page: Apple Calendar-style Day / Week / Month views plus invites, team calendars, find-a-time, sharing."""
 import datetime as dt
 import streamlit as st
-import cal, cases, ui
+import cal, cases, i18n, ui
+from i18n import t
 from views import calendar_grid as grid
 
 LEVEL_LABEL = {"busy": "Busy only", "details": "Titles visible", "full": "Full"}
@@ -77,16 +78,18 @@ def _jump():
 
 
 def _title(view: str, first: dt.date, last_excl: dt.date, anchor: dt.date) -> str:
+    mon, mon_s = i18n.month_name, lambda d: i18n.fmt(d, "%b")
     if view == "Day":
-        return f"{anchor:%B} {anchor.day}, <span>{anchor.year}</span>"
+        day = f"{mon(anchor.month)} {anchor.day}" if i18n.lang() == "en" else f"{anchor.day} {mon(anchor.month)}"
+        return f"{day}, <span>{anchor.year}</span>"
     if view == "Month":
-        return f"{anchor:%B} <span>{anchor.year}</span>"
+        return f"{mon(anchor.month)} <span>{anchor.year}</span>"
     last = last_excl - dt.timedelta(days=1)
     if first.month == last.month:
-        return f"{first:%B} <span>{first.year}</span>"
+        return f"{mon(first.month)} <span>{first.year}</span>"
     if first.year == last.year:
-        return f"{first:%b} – {last:%b} <span>{first.year}</span>"
-    return f"{first:%b} <span>{first.year}</span> – {last:%b} <span>{last.year}</span>"
+        return f"{mon_s(first)} – {mon_s(last)} <span>{first.year}</span>"
+    return f"{mon_s(first)} <span>{first.year}</span> – {mon_s(last)} <span>{last.year}</span>"
 
 
 # ---------- data ----------
@@ -94,7 +97,7 @@ def _my_items(u, start: float, end: float):
     items = []
     for e in cal.my_events(u["id"], start, end):
         kind = "meeting" if (e.get("attendees") or not e["mine"]) else "event"
-        sub = "" if e["mine"] else f"from {e['organizer']}"
+        sub = "" if e["mine"] else t("from {who}", who=e["organizer"])
         items.append(dict(e, kind=kind, tentative=e["my_status"] == "pending", sub=sub))
     for d in cases.deadlines_between(u["id"], start, end):
         items.append(dict(id=None, title=d["title"], start=d["due"], end=d["due"] + 1800, kind=d["kind"],
@@ -103,24 +106,24 @@ def _my_items(u, start: float, end: float):
 
 
 # ---------- dialogs ----------
-@st.dialog("New event")
+@st.dialog(t("New event"))
 def _new_event_dialog(u, default_day: dt.date):
     mates = cal.teammates(u["id"])
     my_cases = cases.list_cases(u["id"])
     with st.form("new_event", border=False):
-        title = st.text_input("Title", placeholder="Client call: Smith v. Acme")
+        title = st.text_input(t("Title"), placeholder=t("Client call: Smith v. Acme"))
         c1, c2, c3 = st.columns([2, 1, 1])
-        day = c1.date_input("Date", value=default_day)
-        t1 = c2.time_input("Starts", value=dt.time(10, 0), step=900)
-        t2 = c3.time_input("Ends", value=dt.time(11, 0), step=900)
-        inv = st.multiselect("Invitees", [m["id"] for m in mates],
+        day = c1.date_input(t("Date"), value=default_day)
+        t1 = c2.time_input(t("Starts"), value=dt.time(10, 0), step=900)
+        t2 = c3.time_input(t("Ends"), value=dt.time(11, 0), step=900)
+        inv = st.multiselect(t("Invitees"), [m["id"] for m in mates],
                              format_func=lambda i: next(m["email"] for m in mates if m["id"] == i),
-                             placeholder="Add people you share a case with")
-        case = st.selectbox("Case", [None] + [c["id"] for c in my_cases],
-                            format_func=lambda i: "None" if i is None else next(c["title"] for c in my_cases
-                                                                                if c["id"] == i))
-        notes = st.text_area("Notes", placeholder="Only you and invitees can see these", height=90)
-        if st.form_submit_button("Add event", type="primary", use_container_width=True):
+                             placeholder=t("Add people you share a case with"))
+        case = st.selectbox(t("Case"), [None] + [c["id"] for c in my_cases],
+                            format_func=lambda i: t("None") if i is None else next(c["title"] for c in my_cases
+                                                                                   if c["id"] == i))
+        notes = st.text_area(t("Notes"), placeholder=t("Only you and invitees can see these"), height=90)
+        if st.form_submit_button(t("Add event"), type="primary", use_container_width=True):
             s = dt.datetime.combine(day, t1).timestamp()
             e = dt.datetime.combine(day, t2).timestamp()
             eid, msg = cal.add_event(u, title, s, e, notes, case, inv)
@@ -128,50 +131,50 @@ def _new_event_dialog(u, default_day: dt.date):
                 st.session_state["cal_anchor"] = day
                 st.session_state["cal_flash"] = msg
                 st.rerun()
-            st.error(msg)
+            st.error(i18n.tm(msg))
 
 
 # ---------- event list under the grid ----------
 def _event_list(u, items, key: str, editable: bool):
     if not items:
-        st.caption("Nothing scheduled in this range.")
+        st.caption(t("Nothing scheduled in this range."))
         return
     day = None
     for e in items:
         d = dt.date.fromtimestamp(e["start"])
         if d != day:
             day = d
-            ui.html_block(f'<div class="lv-dayh">{d:%A, %B} {d.day}</div>')
+            ui.html_block(f'<div class="lv-dayh">{ui.esc(i18n.date_full(d))}</div>')
         color = grid.COLORS.get(e["kind"], grid.COLORS["event"])
         when = _fmt(e["start"]) if e["kind"] in ("deadline", "task") else f"{_fmt(e['start'])} – {_fmt(e['end'])}"
         tags = []
         if e.get("tentative"):
-            tags.append('<span class="lv-pill grey">Tentative</span>')
+            tags.append(f'<span class="lv-pill grey">{ui.esc(t("Tentative"))}</span>')
         if e["kind"] == "deadline":
-            tags.append('<span class="lv-pill red">Deadline</span>')
+            tags.append(f'<span class="lv-pill red">{ui.esc(t("Deadline"))}</span>')
         a, b = st.columns([8, 1], vertical_alignment="center")
         a.markdown(f'<div class="lv-dayrow"><i style="background:{color}"></i><div><div class="lv-row-t">'
-                   f'{ui.esc(e["title"])} {" ".join(tags)}</div><div class="lv-row-d">{ui.esc(when)}'
+                   f'{ui.esc(t(e["title"]) if e["kind"] == "busy" else e["title"])} {" ".join(tags)}</div><div class="lv-row-d">{ui.esc(when)}'
                    f'{" · " + ui.esc(e["sub"]) if e.get("sub") else ""}</div></div></div>', unsafe_allow_html=True)
         if editable and e.get("id"):
             with b.popover("", icon=":material/more_horiz:", use_container_width=True):
                 st.markdown(f"**{e['title']}**")
-                st.caption(f"{_fmt(e['start'], '%a %b %d')} · {when}")
+                st.caption(f"{i18n.date_wmd(dt.datetime.fromtimestamp(e['start']))} · {when}")
                 if e.get("notes"):
                     st.caption(e["notes"])
                 if e.get("organizer") and not e["mine"]:
-                    st.caption(f"Organizer: {e['organizer']}")
+                    st.caption(t("Organizer: {who}", who=e["organizer"]))
                 for att in e.get("attendees", []):
-                    st.caption(f"{att['email']}: {att['status']}")
+                    st.caption(f"{att['email']}: {t(att['status'])}")
                 if e.get("tentative"):
                     c1, c2 = st.columns(2)
-                    if c1.button("Accept", key=f"ac_{key}_{e['id']}", type="primary", use_container_width=True):
+                    if c1.button(t("Accept"), key=f"ac_{key}_{e['id']}", type="primary", use_container_width=True):
                         cal.respond_invite(u["id"], e["id"], True)
                         st.rerun()
-                    if c2.button("Decline", key=f"dc_{key}_{e['id']}", use_container_width=True):
+                    if c2.button(t("Decline"), key=f"dc_{key}_{e['id']}", use_container_width=True):
                         cal.respond_invite(u["id"], e["id"], False)
                         st.rerun()
-                elif st.button("Delete for everyone" if e["mine"] else "Remove from my calendar",
+                elif st.button(t("Delete for everyone") if e["mine"] else t("Remove from my calendar"),
                                key=f"del_{key}_{e['id']}", use_container_width=True):
                     cal.delete_event(u["id"], e["id"])
                     st.rerun()
@@ -186,17 +189,17 @@ def _calendar(u):
     items = _my_items(u, start, end)
 
     with st.container(key="cal_toolbar"):
-        t, seg, nav, add = st.columns([5, 3, 2.6, 1.6], vertical_alignment="center")
-        t.markdown(f'<div class="lv-calt">{_title(view, first, last, anchor)}</div>', unsafe_allow_html=True)
-        seg.segmented_control("View", VIEWS, default="Week", key="cal_view", on_change=_keep_view,
-                              label_visibility="collapsed")
+        ttl, seg, nav, add = st.columns([5, 3, 2.6, 1.6], vertical_alignment="center")
+        ttl.markdown(f'<div class="lv-calt">{_title(view, first, last, anchor)}</div>', unsafe_allow_html=True)
+        seg.segmented_control(t("View"), VIEWS, default="Week", key="cal_view", on_change=_keep_view,
+                              format_func=t, label_visibility="collapsed")
         p, td, n = nav.columns([1, 1.7, 1])
         p.button("", icon=":material/chevron_left:", key="cal_prev", on_click=_shift, args=(-1,),
-                 use_container_width=True, help="Previous")
-        td.button("Today", key="cal_today", on_click=_go_today, use_container_width=True)
+                 use_container_width=True, help=t("Previous"))
+        td.button(t("Today"), key="cal_today", on_click=_go_today, use_container_width=True)
         n.button("", icon=":material/chevron_right:", key="cal_next", on_click=_shift, args=(1,),
-                 use_container_width=True, help="Next")
-        if add.button("New", icon=":material/add:", type="primary", key="cal_new", use_container_width=True):
+                 use_container_width=True, help=t("Next"))
+        if add.button(t("New"), icon=":material/add:", type="primary", key="cal_new", use_container_width=True):
             today = dt.date.today()
             _new_event_dialog(u, today if first <= today < last else (anchor if view == "Day" else first))
     flash = st.session_state.pop("cal_flash", None)
@@ -217,7 +220,7 @@ def _calendar(u):
         st.markdown(grid.legend(), unsafe_allow_html=True)
         n_inv = len(cal.pending_invites(u["id"]))
         if n_inv:
-            st.caption(f"{n_inv} invitation{'s' if n_inv != 1 else ''} waiting in Invites.")
+            st.caption(i18n.plural(n_inv, "{n} invitation waiting in Invites.", "{n} invitations waiting in Invites."))
 
     with main:
         if view == "Month":
@@ -225,30 +228,31 @@ def _calendar(u):
         else:
             days = [first + dt.timedelta(days=i) for i in range((last - first).days)]
             st.markdown(grid.time_grid(days, items), unsafe_allow_html=True)
-        label = {"Day": "this day", "Week": "this week", "Month": "this month"}[view]
+        label = t({"Day": "this day", "Week": "this week", "Month": "this month"}[view])
         visible = items if view != "Month" else [
             e for e in items if dt.date.fromtimestamp(e["start"]).month == anchor.month]
-        with st.expander(f"Events {label} · {len(visible)}", expanded=view == "Day"):
+        with st.expander(t("Events {label} · {n}", label=label, n=len(visible)), expanded=view == "Day"):
             _event_list(u, visible, "mine", editable=True)
 
 
 # ---------- other tabs ----------
 def _invites(u, invites):
     if not invites:
-        st.info("No pending invitations.", icon=":material/event_available:")
+        st.info(t("No pending invitations."), icon=":material/event_available:")
         return
     for e in invites:
         with st.container(border=True):
             a, b, c = st.columns([6, 1.2, 1.2], vertical_alignment="center")
             a.markdown(f'<div class="lv-row-t">{ui.esc(e["title"])}</div><div class="lv-row-d">'
-                       f'{_fmt(e["start"], "%A, %B %d · %H:%M")} – {_fmt(e["end"])} · from {ui.esc(e["organizer"])}'
+                       f'{i18n.fmt(dt.datetime.fromtimestamp(e["start"]), "%A, %B %d · %H:%M")} – {_fmt(e["end"])} · '
+                       f'{ui.esc(t("from {who}", who=e["organizer"]))}'
                        f'</div>', unsafe_allow_html=True)
             if e["notes"]:
                 a.caption(e["notes"])
-            if b.button("Accept", key=f"acc_{e['id']}", type="primary", use_container_width=True):
+            if b.button(t("Accept"), key=f"acc_{e['id']}", type="primary", use_container_width=True):
                 cal.respond_invite(u["id"], e["id"], True)
                 st.rerun()
-            if c.button("Decline", key=f"dec_{e['id']}", use_container_width=True):
+            if c.button(t("Decline"), key=f"dec_{e['id']}", use_container_width=True):
                 cal.respond_invite(u["id"], e["id"], False)
                 st.rerun()
 
@@ -256,47 +260,47 @@ def _invites(u, invites):
 def _team(u):
     vis = cal.viewable_calendars(u["id"])
     if not vis:
-        st.info("You can't see anyone's calendar yet. Teammates can turn on sharing, or you can request access "
-                "under Sharing.", icon=":material/visibility_off:")
+        st.info(t("You can't see anyone's calendar yet. Teammates can turn on sharing, or you can request access "
+                  "under Sharing."), icon=":material/visibility_off:")
         return
     a, b = st.columns([3, 2], vertical_alignment="bottom")
-    who = a.selectbox("Calendar", [v["id"] for v in vis],
-                      format_func=lambda i: next(f"{v['email']}  ·  {LEVEL_LABEL[v['level']]}"
+    who = a.selectbox(t("Calendar"), [v["id"] for v in vis],
+                      format_func=lambda i: next(f"{v['email']}  ·  {t(LEVEL_LABEL[v['level']])}"
                                                  for v in vis if v["id"] == i))
     wk = st.session_state.setdefault("team_week", dt.date.today() - dt.timedelta(days=dt.date.today().weekday()))
-    p, t, n, lbl = b.columns([1, 1.6, 1, 3], vertical_alignment="center")
+    p, td, n, lbl = b.columns([1, 1.6, 1, 3], vertical_alignment="center")
     if p.button("", icon=":material/chevron_left:", key="tw_prev", use_container_width=True):
         st.session_state["team_week"] = wk - dt.timedelta(days=7)
         st.rerun()
-    if t.button("Today", key="tw_today", use_container_width=True):
+    if td.button(t("Today"), key="tw_today", use_container_width=True):
         st.session_state.pop("team_week")
         st.rerun()
     if n.button("", icon=":material/chevron_right:", key="tw_next", use_container_width=True):
         st.session_state["team_week"] = wk + dt.timedelta(days=7)
         st.rerun()
-    lbl.markdown(f"**{wk:%b %d} – {wk + dt.timedelta(days=6):%b %d}**")
+    lbl.markdown(f"**{i18n.fmt(wk, '%b %d')} – {i18n.fmt(wk + dt.timedelta(days=6), '%b %d')}**")
     start = dt.datetime.combine(wk, dt.time(0)).timestamp()
     level, evs = cal.view_calendar(u["id"], who, start, start + 7 * 86400)
     items = [dict(e, kind="busy" if level == "busy" or e["id"] is None else "event", tentative=False, sub="")
              for e in evs]
     if level == "busy":
-        st.caption("This person shares free/busy only: you see when they're busy, not what.")
+        st.caption(t("This person shares free/busy only: you see when they're busy, not what."))
     st.markdown(grid.time_grid([wk + dt.timedelta(days=i) for i in range(7)], items), unsafe_allow_html=True)
 
 
 def _find(u):
-    st.caption(f"Finds times when everyone is free, Monday to Friday, {cal.WORK_START}:00–{cal.WORK_END}:00. "
-               "Only people whose calendar you can see are listed.")
+    st.caption(t("Finds times when everyone is free, Monday to Friday, {start}:00–{end}:00. "
+                 "Only people whose calendar you can see are listed.", start=cal.WORK_START, end=cal.WORK_END))
     vis = cal.viewable_calendars(u["id"])
     with st.form("find"):
-        people = st.multiselect("Attendees", [v["id"] for v in vis],
+        people = st.multiselect(t("Attendees"), [v["id"] for v in vis],
                                 format_func=lambda i: next(v["email"] for v in vis if v["id"] == i))
         c1, c2, c3 = st.columns(3)
-        dur = c1.selectbox("Duration", [30, 60, 90, 120], index=1, format_func=lambda m: f"{m} min")
-        first = c2.date_input("From", value=dt.date.today())
-        days = c3.slider("Days to search", 1, 14, 5)
-        title = st.text_input("Meeting title", value="Case strategy meeting")
-        go = st.form_submit_button("Find free slots", type="primary")
+        dur = c1.selectbox(t("Duration"), [30, 60, 90, 120], index=1, format_func=lambda m: t("{n} min", n=m))
+        first = c2.date_input(t("From"), value=dt.date.today())
+        days = c3.slider(t("Days to search"), 1, 14, 5)
+        title = st.text_input(t("Meeting title"), value=t("Case strategy meeting"))
+        go = st.form_submit_button(t("Find free slots"), type="primary")
     if go:
         slots, err = cal.find_slots(u, people, first, days, dur)
         st.session_state["slots"] = dict(slots=slots, err=err, people=people, title=title)
@@ -304,17 +308,17 @@ def _find(u):
     if not res:
         return
     if res["err"]:
-        st.error(res["err"])
+        st.error(i18n.tm(res["err"]))
     elif not res["slots"]:
-        st.warning("No common free time in that range. Try more days or a shorter meeting.")
+        st.warning(t("No common free time in that range. Try more days or a shorter meeting."))
     else:
-        st.success(f"{len(res['slots'])} slots where everyone is free.")
+        st.success(t("{n} slots where everyone is free.", n=len(res["slots"])))
         for s, e in res["slots"]:
             c1, c2 = st.columns([5, 1], vertical_alignment="center")
-            c1.markdown(f"{_fmt(s, '%a %b %d')} · **{_fmt(s)} – {_fmt(e)}**")
-            if c2.button("Book", key=f"book_{s}", use_container_width=True):
+            c1.markdown(f"{i18n.date_wmd(dt.datetime.fromtimestamp(s))} · **{_fmt(s)} – {_fmt(e)}**")
+            if c2.button(t("Book"), key=f"book_{s}", use_container_width=True):
                 eid, msg = cal.add_event(u, res["title"], s, e, "", None, res["people"])
-                (st.success if eid else st.error)(msg)
+                (st.success if eid else st.error)(i18n.tm(msg))
                 if eid:
                     st.session_state.pop("slots")
 
@@ -322,27 +326,27 @@ def _find(u):
 def _sharing(u, reqs):
     ui.section("Who can see my calendar")
     cur = cal.get_visibility(u["id"])
-    choice = st.radio("Visibility for case teammates", cal.VISIBILITY, index=cal.VISIBILITY.index(cur),
-                      format_func=lambda v: VIS_HELP[v], key="vis", label_visibility="collapsed")
+    choice = st.radio(t("Visibility for case teammates"), cal.VISIBILITY, index=cal.VISIBILITY.index(cur),
+                      format_func=lambda v: t(VIS_HELP[v]), key="vis", label_visibility="collapsed")
     if choice != cur:
         cal.set_visibility(u["id"], choice)
-        st.toast("Calendar visibility saved.")
+        st.toast(t("Calendar visibility saved."))
 
     ui.section("Requests to see my calendar")
     if not reqs:
-        st.caption("No pending requests.")
+        st.caption(t("No pending requests."))
     for r in reqs:
         with st.container(border=True):
             a, b, c, d = st.columns([5, 1.3, 1.3, 1.3], vertical_alignment="center")
-            a.markdown(f"**{r['email']}** wants {LEVEL_LABEL[r['level']].lower()} access")
-            if b.button("Approve", key=f"ap_{r['viewer_id']}", type="primary", use_container_width=True):
+            a.markdown(t("**{email}** wants {level} access", email=r["email"], level=t(LEVEL_LABEL[r["level"]]).lower()))
+            if b.button(t("Approve"), key=f"ap_{r['viewer_id']}", type="primary", use_container_width=True):
                 cal.respond_request(u["id"], r["viewer_id"], True)
                 st.rerun()
-            if r["level"] == "details" and c.button("Busy only", key=f"apb_{r['viewer_id']}",
+            if r["level"] == "details" and c.button(t("Busy only"), key=f"apb_{r['viewer_id']}",
                                                      use_container_width=True):
                 cal.respond_request(u["id"], r["viewer_id"], True, "busy")
                 st.rerun()
-            if d.button("Deny", key=f"dn_{r['viewer_id']}", use_container_width=True):
+            if d.button(t("Deny"), key=f"dn_{r['viewer_id']}", use_container_width=True):
                 cal.respond_request(u["id"], r["viewer_id"], False)
                 st.rerun()
 
@@ -351,30 +355,30 @@ def _sharing(u, reqs):
         ui.section("People I approved")
         for g in granted:
             c1, c2 = st.columns([5, 1], vertical_alignment="center")
-            c1.write(f"{g['email']} · {LEVEL_LABEL[g['level']]}")
-            if c2.button("Revoke", key=f"rv_{g['viewer_id']}", use_container_width=True):
+            c1.write(f"{g['email']} · {t(LEVEL_LABEL[g['level']])}")
+            if c2.button(t("Revoke"), key=f"rv_{g['viewer_id']}", use_container_width=True):
                 cal.revoke(u["id"], g["viewer_id"])
                 st.rerun()
 
     ui.section("Request a colleague's calendar")
     mates = cal.teammates(u["id"])
     if not mates:
-        st.caption("Share a case with someone first. You can only request calendars of case teammates.")
+        st.caption(t("Share a case with someone first. You can only request calendars of case teammates."))
     else:
         with st.form("req"):
-            who = st.selectbox("Colleague", [m["id"] for m in mates],
+            who = st.selectbox(t("Colleague"), [m["id"] for m in mates],
                                format_func=lambda i: next(m["email"] for m in mates if m["id"] == i))
-            lvl = st.radio("Access", ["busy", "details"], format_func=lambda v: LEVEL_LABEL[v], horizontal=True)
-            if st.form_submit_button("Send request"):
+            lvl = st.radio(t("Access"), ["busy", "details"], format_func=lambda v: t(LEVEL_LABEL[v]), horizontal=True)
+            if st.form_submit_button(t("Send request")):
                 ok, msg = cal.request_access(u["id"], who, lvl)
-                (st.success if ok else st.warning)(msg)
+                (st.success if ok else st.warning)(i18n.tm(msg))
     mine = cal.my_requests(u["id"])
     if mine:
         ui.section("My requests")
         for r in mine:
             c1, c2 = st.columns([5, 1], vertical_alignment="center")
-            c1.write(f"{r['email']} · {LEVEL_LABEL[r['level']]} · *{r['status']}*")
-            if c2.button("Withdraw" if r["status"] == "pending" else "Stop viewing", key=f"cx_{r['owner_id']}",
+            c1.write(f"{r['email']} · {t(LEVEL_LABEL[r['level']])} · *{t(r['status'])}*")
+            if c2.button(t("Withdraw") if r["status"] == "pending" else t("Stop viewing"), key=f"cx_{r['owner_id']}",
                          use_container_width=True):
                 cal.cancel_request(u["id"], r["owner_id"])
                 st.rerun()
@@ -386,8 +390,8 @@ def render():
     invites = cal.pending_invites(u["id"])
     reqs = cal.incoming_requests(u["id"])
     t_cal, t_inv, t_team, t_find, t_share = st.tabs([
-        "Calendar", f"Invites{f' · {len(invites)}' if invites else ''}", "Team calendars", "Find a time",
-        f"Sharing{f' · {len(reqs)}' if reqs else ''}"])
+        t("Calendar"), f"{t('Invites')}{f' · {len(invites)}' if invites else ''}", t("Team calendars"),
+        t("Find a time"), f"{t('Sharing')}{f' · {len(reqs)}' if reqs else ''}"])
     with t_cal:
         _calendar(u)
     with t_inv:

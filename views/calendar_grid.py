@@ -11,6 +11,8 @@ import calendar as _calendar
 import datetime as dt
 import math
 from typing import Iterable, List, Optional
+import i18n
+from i18n import t
 from ui import esc
 
 HOUR_PX = 52
@@ -25,6 +27,7 @@ COLORS = {
     "busy": "#8E8E93",      # grey: someone else's busy block
 }
 LEGEND = [("event", "My events"), ("meeting", "Meetings"), ("deadline", "Case deadlines"), ("task", "Case tasks")]
+BUSY = "Busy"  # label of someone else's busy block (see cal.py)
 
 
 def _rgba(hex_color: str, a: float) -> str:
@@ -190,9 +193,10 @@ def time_grid(days: List[dt.date], events: List[dict], now: Optional[float] = No
     for d in days:
         cls = "lvc-dh" + (" today" if d == today else "") + (" we" if d.weekday() >= 5 else "") + (" big" if single else "")
         if single:
-            head.append(f'<div class="{cls}"><div class="lvc-dow">{d:%A}</div><div class="lvc-dn">{d:%B} {d.day}</div></div>')
+            head.append(f'<div class="{cls}"><div class="lvc-dow">{i18n.fmt(d, "%A")}</div><div class="lvc-dn">'
+                        f'{i18n.fmt(d, i18n._by_lang("%B %-d", "%-d %B"))}</div></div>')
         else:
-            head.append(f'<div class="{cls}"><div class="lvc-dow">{d:%a}</div><div class="lvc-dn">{d.day}</div></div>')
+            head.append(f'<div class="{cls}"><div class="lvc-dow">{i18n.fmt(d, "%a")}</div><div class="lvc-dn">{d.day}</div></div>')
 
     gut = [f'<div class="lvc-gut" style="height:{height}px">']
     for h in range(lo + 1, hi):
@@ -214,14 +218,14 @@ def time_grid(days: List[dt.date], events: List[dict], now: Optional[float] = No
             h = min(h, height - top)
             w = 100 / n
             short = h < 36
-            title = esc(e["title"])
+            title = esc(t(e["title"]) if e.get("kind") == "busy" else e["title"])
             when = f"{_fmt_time(e['start'])}" if e["end"] - e["start"] <= 1800 and e.get("kind") in ("deadline", "task") \
                 else f"{_fmt_time(e['start'])} – {_fmt_time(e['end'])}"
             sub = f"<span>{esc(when)}</span>"
             if not short and e.get("sub") and h >= 58:
                 sub += f"<span>{esc(e['sub'])}</span>"
             tip = esc(f"{e['title']} · {when}" + (f" · {e['sub']}" if e.get("sub") else "")
-                      + (" · tentative" if e.get("tentative") else ""))
+                      + (" · " + t("Tentative").lower() if e.get("tentative") else ""))
             parts.append(
                 f'<div class="lvc-ev{" short" if short else ""}{" tent" if e.get("tentative") else ""}" title="{tip}" '
                 f'style="top:{top:.1f}px;height:{h:.1f}px;left:calc({c * w:.4f}% + 2px);width:calc({w:.4f}% - 5px);'
@@ -246,14 +250,14 @@ def month_days(year: int, month: int) -> List[dt.date]:
 
 def month_grid(year: int, month: int, events: List[dict], today: Optional[dt.date] = None, per_day: int = 4) -> str:
     today = today or dt.date.today()
-    head = "".join(f"<div>{n}</div>" for n in ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"))
+    head = "".join(f"<div>{i18n.day_short(i)}</div>" for i in range(7))
     cells = []
     for d in month_days(year, month):
         d0, d1 = _ts(d), _ts(d + dt.timedelta(days=1))
         todays = sorted((e for e in events if e["start"] < d1 and e["end"] > d0), key=lambda e: e["start"])
         cls = "lvm-cell" + (" out" if d.month != month else "") + (" today" if d == today else "") + \
               (" we" if d.weekday() >= 5 else "")
-        label = f"{d:%b} {d.day}" if d.day == 1 else str(d.day)
+        label = i18n.date_md(d) if d.day == 1 else str(d.day)
         rows = []
         shown = todays if len(todays) <= per_day else todays[:per_day - 1]
         for e in shown:
@@ -267,7 +271,7 @@ def month_grid(year: int, month: int, events: List[dict], today: Optional[dt.dat
                 rows.append(f'<div class="lvm-ev" title="{tip}"><i style="{dot}"></i><em>{esc(e["title"])}</em>'
                             f'<small>{_fmt_time(max(e["start"], d0))}</small></div>')
         if len(todays) > len(shown):
-            rows.append(f'<div class="lvm-more">{len(todays) - len(shown)} more</div>')
+            rows.append(f'<div class="lvm-more">{esc(t("{n} more", n=len(todays) - len(shown)))}</div>')
         cells.append(f'<div class="{cls}"><div class="lvm-top"><span class="lvm-num">{esc(label)}</span></div>'
                      f'{"".join(rows)}</div>')
     return f'<div class="lvm"><div class="lvm-head">{head}</div><div class="lvm-grid">{"".join(cells)}</div></div>'
@@ -278,7 +282,7 @@ def mini_month(year: int, month: int, sel_start: dt.date, sel_end: dt.date, busy
     """sel_end is exclusive."""
     today = today or dt.date.today()
     busy_days = set(busy_days)
-    cells = ["".join(f'<div class="h">{c}</div>' for c in "MTWTFSS")]
+    cells = ["".join(f'<div class="h">{c}</div>' for c in i18n.weekday_initials())]
     for d in month_days(year, month):
         sel = sel_start <= d < sel_end
         cls = "d" + (" out" if d.month != month else "") + (" today" if d == today else "") + \
@@ -287,10 +291,10 @@ def mini_month(year: int, month: int, sel_start: dt.date, sel_end: dt.date, busy
             cls += " sel" + (" l" if d == sel_start or d.weekday() == 0 else "") + \
                    (" r" if d == sel_end - dt.timedelta(days=1) or d.weekday() == 6 else "")
         cells.append(f'<div class="{cls}"><span>{d.day}</span></div>')
-    return (f'<div class="lvmini"><div class="lvmini-t">{_calendar.month_name[month]} {year}</div>'
+    return (f'<div class="lvmini"><div class="lvmini-t">{i18n.month_name(month)} {year}</div>'
             f'<div class="lvmini-g">{"".join(cells)}</div></div>')
 
 
 def legend() -> str:
-    rows = "".join(f'<div class="lvleg-r"><i style="background:{COLORS[k]}"></i>{esc(label)}</div>' for k, label in LEGEND)
-    return f'<div class="lvleg"><div class="lvleg-t">Calendars</div>{rows}</div>'
+    rows = "".join(f'<div class="lvleg-r"><i style="background:{COLORS[k]}"></i>{esc(t(label))}</div>' for k, label in LEGEND)
+    return f'<div class="lvleg"><div class="lvleg-t">{esc(t("Calendars"))}</div>{rows}</div>'

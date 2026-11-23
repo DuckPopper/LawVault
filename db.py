@@ -89,6 +89,7 @@ MIGRATIONS = [
     ("sessions", "user_agent", "TEXT"),
     ("sessions", "ip", "TEXT"),
     ("legal_work", "matter", "TEXT"),
+    ("users", "lang", "TEXT NOT NULL DEFAULT 'en'"),
 ]
 
 

@@ -7,7 +7,9 @@ in the team chat and pulls deadlines out of documents. The **Case analysis** pag
 case analysis (*analisis kasus*), a visual timeline (*pembuatan timeline*), the legal basis (*dasar hukum*), a
 risk register with a severity × likelihood matrix (*risiko hukum*), legal drafting (somasi, gugatan, legal opinion,
 surat kuasa, …) and a strategy recommendation (*rekomendasi strategi*), in Bahasa Indonesia or English, with
-Indonesian law as the default jurisdiction. Login uses a password plus a one-time code (email or
+Indonesian law as the default jurisdiction.
+The whole interface is available in **English and Bahasa Indonesia** (login page, sidebar and Settings → General),
+including dates, notifications and the privacy policy; AI answers follow the chosen language. Login uses a password plus a one-time code (email or
 authenticator app), with Discord-style presence, live notifications and subscription plans.
 
 ## Run it
@@ -25,7 +27,7 @@ streamlit run app.py          # run from this folder so .streamlit/config.toml (
 `partner@lawvault.test` (editor), `associate@lawvault.test` (viewer), all with the password in `seed_demo.py`.
 With `DEV_MODE=1` the email code is shown on screen; set `DEV_MODE=0` plus SMTP settings to email it for real.
 
-**Tests:** `python -m pytest tests -q` → 118 security and feature tests.
+**Tests:** `python -m pytest tests -q` → 137 security and feature tests.
 **Static scan:** `bandit -r . -x ./tests,./.venv -ll` → no issues.
 **CI:** `.github/workflows/ci.yml` runs both on every push once the project is on GitHub.
 
@@ -50,13 +52,14 @@ See [DEMO_SCRIPT.md](DEMO_SCRIPT.md) for a 3-minute presentation walkthrough.
 | `cal.py` | Calendars: visibility, access requests, meeting invites, find-a-time |
 | `subscription.py` | Plans, limits, daily AI quota, mock checkout |
 | `ai.py` | Gemini client, Q&A, contract analysis, case summary, `@ai` in chat, deadline extraction |
+| `i18n.py`, `i18n_id.py` | Interface language: `t()` helper, localised dates, per-user setting; the Indonesian strings |
 | `legal.py` | Case analysis toolkit: six tools, prompts per jurisdiction, validated timeline / risk output, encrypted results |
 | `seed_analysis_demo.py` | Demo matter *PT Sentosa Abadi v. PT Maju Logistik* for the Case analysis page |
 | `privacy.py` | PII redaction, data export, account deletion |
 | `docutil.py` | Safe upload parsing (size, magic bytes, page limit) |
 | `ui.py` | Shared stylesheet and layout helpers (page header, stat cards, list rows) |
 | `views/` | Streamlit pages; `settings.py` holds General, Account, Privacy and Billing; `calendar_grid.py` renders the Day/Week/Month calendar |
-| `tests/` | 118 tests |
+| `tests/` | 137 tests |
 | `.streamlit/config.toml` | Theme (Inter font), 50 MB upload cap, XSRF protection, hides developer menu |
 
 ## Security & data protection
@@ -92,3 +95,11 @@ See [DEMO_SCRIPT.md](DEMO_SCRIPT.md) for a 3-minute presentation walkthrough.
 - SQLite suits a demo; production would use Postgres.
 - Event titles are encrypted but times are not (needed for free/busy); all times use the server's time zone.
 - If the breached-password service is unreachable, signup is allowed (fail-open) with the other rules still applied.
+
+## Languages
+
+Strings in the code are written in English and wrapped in `t("…")`; the English text is the key into
+`i18n_id.ID`, so an untranslated string falls back to English instead of breaking. `tests/test_i18n.py` fails if a
+string passed to `t()` (or a backend message shown to users) has no Indonesian entry. The language is saved per user
+(`users.lang`), chosen at sign-up from the login-page switch, and can be changed in the sidebar or Settings → General.
+To add another language, add a `LANGS` entry, day and month names in `i18n.py`, and a dictionary like `i18n_id.py`.

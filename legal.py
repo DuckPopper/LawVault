@@ -392,7 +392,7 @@ def run(user, tool: str, case_id: Optional[str], facts: str, jurisdiction: str, 
     if err:
         return None, err
     prompt = build_prompt(tool, material, jurisdiction, language, prior or {}, draft_type, instructions)
-    text, err = ai._with_quota(user, [{"role": "user", "parts": [{"text": prompt}]}])
+    text, err = ai._with_quota(user, [{"role": "user", "parts": [{"text": prompt}]}], language)
     if err:
         return None, err
     if tool == "timeline" and parse_timeline(text) is None:
