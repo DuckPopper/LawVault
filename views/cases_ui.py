@@ -46,7 +46,7 @@ def chat_feed(user_id: str, case_id: str):
 
 def _chat_tab(u, case):
     cid = case["id"]
-    c1, c2 = st.columns([1, 3])
+    c1, c2 = st.columns([2, 3])
     if c1.button(t("Brief me on this case"), icon=":material/auto_awesome:",
                  help=t("AI briefing from the chat, documents and deadlines")):
         with st.spinner(t("Reading the case…")):
@@ -192,11 +192,12 @@ def _team_tab(u, case):
     cid = case["id"]
     mem = cases.members(u["id"], cid)
     pres = presence.status_of([m["id"] for m in mem])
+    notes = presence.messages_of([m["id"] for m in mem])
     for m in mem:
         c1, c2, c3 = st.columns([4, 2, 1])
         dot = presence.DOT[pres[m["id"]]]
         c1.write(f"{dot} {m['email']}{t('  (you)') if m['id'] == u['id'] else ''}")
-        c1.caption(t(presence.LABEL[pres[m["id"]]]))
+        c1.caption(t(presence.LABEL[pres[m["id"]]]) + (f" · “{notes[m['id']]}”" if notes[m["id"]] else ""))
         if case["role"] == "owner" and m["role"] != "owner":
             new = c2.selectbox(t("Role"), cases.ASSIGNABLE_ROLES, index=cases.ASSIGNABLE_ROLES.index(m["role"]),
                                format_func=_role_label, key=f"role_{m['id']}", label_visibility="collapsed")

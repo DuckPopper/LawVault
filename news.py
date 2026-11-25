@@ -90,6 +90,21 @@ def _ts(s: str | None) -> float:
         return 0.0
 
 
+_IMG = re.compile(r"""<img[^>]+src=["']([^"']+)""", re.I)
+
+
+def _image(it) -> str | None:
+    """Thumbnail of an RSS item: media:thumbnail / media:content / image enclosure / first <img> in the text."""
+    for el in it.iter():
+        tag = el.tag.rsplit("}", 1)[-1] if isinstance(el.tag, str) else ""
+        if tag in ("thumbnail", "content", "enclosure"):
+            kind = (el.get("type") or el.get("medium") or "image").lower()
+            if kind.startswith("image") and _safe_url(el.get("url")):
+                return _safe_url(el.get("url"))
+    m = _IMG.search(it.findtext("description") or "")
+    return _safe_url(html.unescape(m.group(1))) if m else None
+
+
 def parse_feed(xml_bytes: bytes, source: str) -> list[dict]:
     """RSS 2.0 items -> [{title, link, summary, ts, source}]. Anything malformed is skipped."""
     try:
@@ -102,7 +117,7 @@ def parse_feed(xml_bytes: bytes, source: str) -> list[dict]:
         if not title or not link:
             continue
         out.append(dict(title=title, link=link, summary=_text(it.findtext("description"), 260),
-                        ts=_ts(it.findtext("pubDate")), source=source))
+                        ts=_ts(it.findtext("pubDate")), source=source, image=_image(it)))
         if len(out) >= PER_FEED:
             break
     return out

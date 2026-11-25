@@ -194,6 +194,14 @@ def set_theme(user_id: str, theme: str) -> bool:
     return True
 
 
+def update_profile(user_id: str, display_name: str, job_title: str, organization: str) -> bool:
+    """Saves the profile fields (plain text, trimmed and capped)."""
+    with db.conn() as c:
+        c.execute("UPDATE users SET display_name=?, job_title=?, organization=? WHERE id=?",
+                  (display_name.strip()[:80], job_title.strip()[:80], organization.strip()[:120], user_id))
+    return True
+
+
 def logout(token: Optional[str]):
     if token:
         with db.conn() as c:

@@ -55,7 +55,7 @@ CSS = _compact("""<style>
 .lvc-head{ border-bottom:1px solid var(--lv-border); }
 .lvc-dh{ padding:10px 6px 9px; text-align:center; border-left:1px solid var(--lv-border); }
 .lvc-dh:first-child{ border-left:none; }
-.lvc-dow{ font-size:11px; letter-spacing:.07em; text-transform:uppercase; color:var(--lv-muted); font-weight:600; }
+.lvc-dow{ font-size:11px; color:var(--lv-muted); font-weight:600; }
 .lvc-dn{ display:inline-flex; align-items:center; justify-content:center; min-width:34px; height:34px; padding:0 6px;
   margin-top:3px; border-radius:17px; font-size:21px; font-weight:500; color:var(--lv-text); letter-spacing:-.02em; }
 .lvc-dh.we .lvc-dn{ color:var(--lv-muted); }
@@ -69,12 +69,12 @@ CSS = _compact("""<style>
 .lvc-nowlbl{ position:absolute; right:4px; transform:translateY(-50%); font-size:10.5px; font-weight:600; color:#FF453A;
   background:var(--lv-surface); padding:0 3px; z-index:3; font-variant-numeric:tabular-nums; }
 .lvc-col{ position:relative; border-left:1px solid var(--lv-border);
-  background-image:repeating-linear-gradient(to bottom, rgba(255,255,255,.065) 0, rgba(255,255,255,.065) 1px, transparent 1px, transparent @H@px),
-                   repeating-linear-gradient(to bottom, transparent 0, transparent @HH@px, rgba(255,255,255,.025) @HH@px, rgba(255,255,255,.025) @HH1@px, transparent @HH1@px, transparent @H@px); }
-.lvc-col.we{ background-color:rgba(0,0,0,.14); }
+  background-image:repeating-linear-gradient(to bottom, var(--lv-line) 0, var(--lv-line) 1px, transparent 1px, transparent @H@px),
+                   repeating-linear-gradient(to bottom, transparent 0, transparent @HH@px, var(--lv-line2) @HH@px, var(--lv-line2) @HH1@px, transparent @HH1@px, transparent @H@px); }
+.lvc-col.we{ background-color:var(--lv-weekend); }
 .lvc-col.today{ background-color:rgba(255,69,58,.035); }
 .lvc-ev{ position:absolute; border-radius:6px; padding:3px 6px 3px 7px; overflow:hidden; font-size:11.5px; line-height:1.28;
-  border-left:3px solid; box-shadow:0 0 0 1px rgba(14,17,22,.9); }
+  border-left:3px solid; box-shadow:0 0 0 1px var(--lv-ev-ring); }
 .lvc-ev b{ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; font-weight:600; overflow:hidden; word-break:break-word; }
 .lvc-ev span{ display:block; opacity:.82; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .lvc-ev.short{ display:flex; gap:6px; align-items:center; padding-top:1px; padding-bottom:1px; }
@@ -86,14 +86,14 @@ CSS = _compact("""<style>
 
 .lvm{ border:1px solid var(--lv-border); border-radius:14px; overflow:hidden; background:var(--lv-surface); }
 .lvm-head, .lvm-grid{ display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); }
-.lvm-head div{ padding:9px 10px; text-align:right; font-size:11px; letter-spacing:.07em; text-transform:uppercase;
+.lvm-head div{ padding:9px 10px; text-align:right; font-size:11px;
   color:var(--lv-muted); font-weight:600; border-bottom:1px solid var(--lv-border); }
 .lvm-grid{ grid-auto-rows:minmax(116px, auto); }
 .lvm-cell{ padding:5px 5px 6px; border-left:1px solid var(--lv-border); border-top:1px solid var(--lv-border); min-width:0; }
 .lvm-cell:nth-child(7n+1){ border-left:none; }
 .lvm-cell:nth-child(-n+7){ border-top:none; }
-.lvm-cell.we{ background:rgba(0,0,0,.14); }
-.lvm-cell.out .lvm-num{ color:rgba(138,147,165,.45); }
+.lvm-cell.we{ background:var(--lv-weekend); }
+.lvm-cell.out .lvm-num{ color:var(--lv-dim); }
 .lvm-top{ display:flex; justify-content:flex-end; margin-bottom:3px; }
 .lvm-num{ display:inline-flex; align-items:center; justify-content:center; min-width:26px; height:26px; padding:0 7px;
   border-radius:13px; font-size:13px; font-weight:500; color:var(--lv-text); font-variant-numeric:tabular-nums; }
@@ -112,15 +112,15 @@ CSS = _compact("""<style>
 .lvmini-g .h{ font-size:10px; color:var(--lv-muted); font-weight:600; padding-bottom:4px; }
 .lvmini-g .d{ position:relative; font-size:11.5px; height:26px; display:flex; align-items:center; justify-content:center;
   color:var(--lv-text); font-variant-numeric:tabular-nums; }
-.lvmini-g .d.out{ color:rgba(138,147,165,.4); }
-.lvmini-g .d.sel{ background:rgba(255,255,255,.07); }
+.lvmini-g .d.out{ color:var(--lv-dim); }
+.lvmini-g .d.sel{ background:var(--lv-sel); }
 .lvmini-g .d.sel.l{ border-top-left-radius:8px; border-bottom-left-radius:8px; }
 .lvmini-g .d.sel.r{ border-top-right-radius:8px; border-bottom-right-radius:8px; }
 .lvmini-g .d.today span{ background:#FF453A; color:#fff; font-weight:600; }
 .lvmini-g .d span{ width:22px; height:22px; border-radius:11px; display:flex; align-items:center; justify-content:center; }
 .lvmini-g .d.has:after{ content:""; position:absolute; bottom:1px; width:3px; height:3px; border-radius:50%; background:var(--lv-muted); }
 .lvleg{ margin-top:18px; }
-.lvleg-t{ font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--lv-muted); font-weight:600; margin:0 2px 6px; }
+.lvleg-t{ font-size:11px; color:var(--lv-muted); font-weight:600; margin:0 2px 6px; }
 .lvleg-r{ display:flex; align-items:center; gap:9px; font-size:13px; color:var(--lv-text); padding:4px 2px; }
 .lvleg-r i{ width:12px; height:12px; border-radius:4px; flex-shrink:0; }
 </style>""".replace("@HH1@", str(HOUR_PX // 2 + 1)).replace("@HH@", str(HOUR_PX // 2)).replace("@H@", str(HOUR_PX)))
@@ -133,7 +133,7 @@ def event_style(kind: str, tentative: bool = False) -> str:
               f"{_rgba(c, .06)} 6px,{_rgba(c, .06)} 12px)")
     else:
         bg = _rgba(c, .30)
-    return f"background:{bg};border-left-color:{c};color:#F2F4F8;"
+    return f"background:{bg};border-left-color:{c};color:var(--lv-ev-text);"
 
 
 # ---------- layout ----------

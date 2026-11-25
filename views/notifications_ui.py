@@ -23,7 +23,7 @@ def render():
     pages = st.session_state.get("_pages", {})
     items = notify.recent(u["id"])
     unread = sum(1 for n in items if not n["read"])
-    head, actions = st.columns([3, 2], vertical_alignment="bottom")
+    head, actions = st.columns([2, 3], vertical_alignment="bottom")
     with head:
         ui.page_header("Notifications", t("{n} unread", n=unread) if unread else "You're all caught up.")
     if items:
@@ -39,6 +39,14 @@ def render():
                 icon=":material/do_not_disturb_on:")
     if not items:
         return
+    view = st.segmented_control(t("Show"), ["all", "unread"], default="all", key="notif_filter",
+                                format_func=lambda v: t("All") if v == "all" else t("Unread") + (f" ({unread})" if unread else ""),
+                                label_visibility="collapsed") or "all"
+    if view == "unread":
+        items = [n for n in items if not n["read"]]
+        if not items:
+            st.caption(t("No unread notifications."))
+            return
     with st.container(border=True):
         for i, n in enumerate(items):
             if i:

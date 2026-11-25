@@ -36,13 +36,14 @@ def render():
 
     inv, req = len(cal.pending_invites(u["id"])), len(cal.incoming_requests(u["id"]))
     if inv or req:
-        a, b = st.columns([5, 1], vertical_alignment="center")
-        a.info(t("{inv} meeting invitation(s) and {req} calendar request(s) need a response.", inv=inv, req=req),
-               icon=":material/event_note:")
-        if "calendar" in pages and b.button(t("Open calendar"), use_container_width=True):
-            st.switch_page(pages["calendar"])
+        with st.container(key="dash_cal"):
+            a, b = st.columns([5, 1], vertical_alignment="center")
+            a.info(t("{inv} meeting invitation(s) and {req} calendar request(s) need a response.", inv=inv, req=req),
+                   icon=":material/event_note:")
+            if "calendar" in pages and b.button(t("Open calendar"), use_container_width=True):
+                st.switch_page(pages["calendar"])
 
-    left, right = st.columns([3, 2], gap="large")
+    left, right = st.columns([5, 4], gap="large")
     with left:
         ui.section("Today")
         start = dt.datetime.combine(dt.date.today(), dt.time(0)).timestamp()

@@ -14,13 +14,13 @@ _CSS = """<style>
 .st-key-settings_nav [role="radiogroup"]{ gap: 2px; }
 .st-key-settings_nav [role="radiogroup"] > label{ margin:0; padding:.5rem .75rem; border-radius:9px; width:100%;
   cursor:pointer; transition: background-color .12s ease; }
-.st-key-settings_nav [role="radiogroup"] > label:hover{ background: rgba(255,255,255,.05); }
-.st-key-settings_nav [role="radiogroup"] > label:has(input:checked){ background: rgba(255,255,255,.08); }
+.st-key-settings_nav [role="radiogroup"] > label:hover{ background: var(--lv-hover); }
+.st-key-settings_nav [role="radiogroup"] > label:has(input:checked){ background: var(--lv-surface-2); }
 .st-key-settings_nav [role="radiogroup"] > label > div:first-child{ display:none; }
 .st-key-settings_nav [role="radiogroup"] > label p{ font-size:.92rem; font-weight:500; color: var(--lv-muted); }
 .st-key-settings_nav [role="radiogroup"] > label:has(input:checked) p{ color: var(--lv-text); }
 .lv-set-h{ font-size:1.3rem; font-weight:620; letter-spacing:-.015em; margin: 0 0 1.2rem; color: var(--lv-text); }
-.lv-set-group{ font-size:.8rem; font-weight:600; color: var(--lv-muted); letter-spacing:.07em; text-transform:uppercase;
+.lv-set-group{ font-size:.8rem; font-weight:600; color: var(--lv-muted);
   margin: 2rem 0 0; padding-bottom:.55rem; border-bottom:1px solid var(--lv-border); }
 [class*="st-key-lvrow_"]{ padding: .85rem 0; border-bottom:1px solid var(--lv-border); gap:0; }
 [class*="st-key-lvrow_"] [data-testid="stMarkdownContainer"] p{ margin-bottom:0; }
@@ -28,7 +28,7 @@ _CSS = """<style>
 .lv-row-d{ font-size:.82rem; color: var(--lv-muted); margin-top:.15rem; line-height:1.45; }
 .lv-policy{ background: var(--lv-surface); border:1px solid var(--lv-border); border-radius:14px; padding: .4rem 1.3rem 1rem; }
 .lv-policy h4{ font-size:.95rem !important; margin-top:1rem !important; }
-.lv-policy p{ color:#C5CAD3; font-size:.9rem; line-height:1.6; }
+.lv-policy p{ color: var(--lv-text); font-size:.9rem; line-height:1.6; }
 </style>"""
 
 
@@ -70,13 +70,6 @@ def _ago(ts):
 # ---------- sections ----------
 def _general(u):
     _h("General")
-    _group("Profile")
-    _row("Email", "Used to sign in and for security alerts.").markdown(u["email"])
-    _row("Role", "Administrators can see account metadata and audit events, never case content.").markdown(
-        t("Administrator") if u["role"] == "admin" else t("Member"))
-    if u["created_at"]:
-        _row("Member since").markdown(i18n.date_long(dt.datetime.fromtimestamp(u["created_at"])))
-
     _group("Language")
     cur_lang = i18n.valid(u["lang"])
     r = _row("Interface language", "Menus, messages and dates. AI answers follow it too, unless you ask in "
@@ -86,6 +79,17 @@ def _general(u):
     if pick != cur_lang:
         auth.set_language(u["id"], pick)
         i18n.set_lang(pick)
+        st.rerun()
+
+    _group("Appearance")
+    cur_theme = ui.valid_theme(u["theme"])
+    r = _row("Theme", "Dark or light. Saved to your account, so it follows you to other devices.")
+    theme = r.segmented_control(t("Theme"), ["dark", "light"], default=cur_theme, key="set_theme",
+                                format_func=lambda m: t("Dark") if m == "dark" else t("Light"),
+                                label_visibility="collapsed", width="stretch") or cur_theme
+    if theme != cur_theme:
+        auth.set_theme(u["id"], theme)
+        st.session_state["theme"] = theme
         st.rerun()
 
     _group("Voice input")
@@ -100,16 +104,6 @@ def _general(u):
     if subscription.has_feature(u, "voice"):
         st.caption(t("{used} of {cap} voice minutes used this month.", used=subscription.voice_seconds_used(u["id"]) // 60,
                      cap=subscription.limits(u)["voice_minutes"]))
-
-    _group("Presence")
-    cur = presence.get_choice(u["id"])
-    r = _row("Status", "Invisible shows you as offline. Do Not Disturb collects notifications without pop-ups.")
-    choice = r.selectbox(t("Status"), presence.CHOICES, index=presence.CHOICES.index(cur),
-                         format_func=lambda c: t(presence.CHOICE_LABEL[c]), key="set_status",
-                         label_visibility="collapsed")
-    if choice != cur:
-        presence.set_choice(u["id"], choice)
-        st.toast(t("Status updated."))
 
     _group("Assistant")
     r = _row("Conversation history", "Your Legal Q&A history is encrypted and visible only to you.")
@@ -180,6 +174,16 @@ def _two_factor(u):
 
 def _account(u):
     _h("Account")
+    _group("Status")
+    cur = presence.get_choice(u["id"])
+    r = _row("Status", "Invisible shows you as offline. Do Not Disturb collects notifications without pop-ups.")
+    choice = r.selectbox(t("Status"), presence.CHOICES, index=presence.CHOICES.index(cur),
+                         format_func=lambda c: t(presence.CHOICE_LABEL[c]), key="set_status",
+                         label_visibility="collapsed")
+    if choice != cur:
+        presence.set_choice(u["id"], choice)
+        st.toast(t("Status updated."))
+
     _group("Security")
     r = _row("Password", "Changing it signs you out everywhere.")
     with r.popover(t("Change password"), use_container_width=True):
@@ -340,7 +344,7 @@ def render():
     ui.page_header("Settings")
     if st.session_state.get("settings_section") not in SECTIONS:
         st.session_state["settings_section"] = "General"
-    nav, body = st.columns([1, 4], gap="large")
+    nav, body = st.columns([3, 10], gap="large")
     with nav, st.container(key="settings_nav"):
         section = st.radio("Section", SECTIONS, key="settings_section", label_visibility="collapsed",
                            format_func=lambda s: f"{ICONS[s]}  {t(s)}")

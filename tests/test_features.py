@@ -160,7 +160,32 @@ def test_presence_states():
         c.execute("UPDATE presence SET status='online', last_heartbeat=? WHERE user_id=?",
                   (time.time() - 200, a["id"]))
     assert presence.status_of([a["id"]])[a["id"]] == "offline"    # tab closed
-    assert not presence.set_choice(a["id"], "busy")
+    assert not presence.set_choice(a["id"], "sleeping")
+
+
+def test_presence_teams_statuses_duration_and_message():
+    a, _, _, _ = _team()
+    presence.touch(a["id"])
+    for choice in ("busy", "brb", "away", "dnd"):
+        assert presence.set_choice(a["id"], choice)
+        assert presence.status_of([a["id"]])[a["id"]] == choice
+    assert presence.is_dnd(a["id"])                               # last one picked was Do not disturb
+    presence.set_choice(a["id"], "busy", "1h")
+    assert presence.get_until(a["id"]) and presence.get_until(a["id"]) > time.time() + 3500
+    with db.conn() as c:                                           # the hour is up
+        c.execute("UPDATE presence SET status_until=? WHERE user_id=?", (time.time() - 1, a["id"]))
+    assert presence.get_choice(a["id"]) == "online" and presence.get_until(a["id"]) is None
+    presence.set_choice(a["id"], "dnd", "today")
+    presence.reset(a["id"])
+    assert presence.get_choice(a["id"]) == "online"
+    assert not presence.set_choice(a["id"], "busy", "forever-and-ever")
+    presence.set_message(a["id"], "  In court   until 3 pm  ")
+    assert presence.get_message(a["id"]) == "In court until 3 pm"
+    assert b"In court" not in config.DB_PATH.read_bytes()          # encrypted at rest
+    presence.set_message(a["id"], "x" * 500)
+    assert len(presence.get_message(a["id"])) == presence.MESSAGE_MAX
+    presence.set_message(a["id"], "")
+    assert presence.get_message(a["id"]) == ""
 
 
 # ---------- sessions & devices ----------

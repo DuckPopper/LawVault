@@ -18,12 +18,17 @@ def _ago(ts: float) -> str:
 
 def _card(n: dict) -> str:
     summary = f'<div class="lv-row-d">{ui.esc(n["summary"])}</div>' if n["summary"] else ""
-    return (f'<div class="lv-card" style="margin-bottom:.7rem">'
+    icon = {"law": "⚖️", "finance": "💼", "tech": "💻", "sports": "⚽", "world": "🌍"}.get(n["topic"], "📰")
+    thumb = (f'<img src="{ui.esc(n["image"])}" alt="" loading="lazy" referrerpolicy="no-referrer" '
+             f'onerror="this.remove()">' if n.get("image") else "")
+    return (f'<div class="lv-card lv-news" style="margin-bottom:.7rem">'
+            f'<div class="lv-thumb"><span class="lv-thumb-ico">{icon}</span>{thumb}</div>'
+            f'<div class="lv-news-body">'
             f'<div class="lv-risk-h"><span class="lv-pill">{ui.esc(t(news.TOPICS[n["topic"]]))}</span>'
             f'<span class="lv-pill grey">{ui.esc(n["lang"].upper())}</span>'
             f'<span class="lv-item-sub" style="margin-left:auto">{ui.esc(n["source"])} · {ui.esc(_ago(n["ts"]))}</span></div>'
             f'<div class="lv-row-t" style="margin-top:.45rem"><a href="{ui.esc(n["link"])}" target="_blank" '
-            f'rel="noopener noreferrer" style="text-decoration:none">{ui.esc(n["title"])}</a></div>{summary}</div>')
+            f'rel="noopener noreferrer" style="text-decoration:none">{ui.esc(n["title"])}</a></div>{summary}</div></div>')
 
 
 def render():

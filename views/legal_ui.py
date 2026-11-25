@@ -269,7 +269,7 @@ def render():
     ui.html_block("<div>" + "".join(pills) + "</div>")
 
     n = len(legal.FULL_RUN)
-    b1, b2 = st.columns([2, 5])
+    b1, b2 = st.columns([3, 4])
     if b1.button(t("Run full analysis"), type="primary", icon=":material/bolt:", use_container_width=True,
                  disabled=all_running or any_single or not (ctx["ready"] and ctx["editor"]),
                  help=i18n.tm(ctx["why_not"]) if ctx["why_not"] else

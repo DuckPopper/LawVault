@@ -946,3 +946,31 @@ ID.update({
     "Upload a contract (PDF, Word or TXT, up to {mb} MB)": "Unggah kontrak (PDF, Word atau TXT, hingga {mb} MB)",
     "Upload PDF, Word or TXT to this case (up to {mb} MB)": "Unggah PDF, Word atau TXT ke kasus ini (hingga {mb} MB)",
 })
+ID.update({
+    "How you appear to your teammates.": "Cara Anda tampil bagi rekan tim.",
+    "Member since {date}": "Anggota sejak {date}",
+    "Your details": "Detail Anda", "Display name": "Nama tampilan", "Job title": "Jabatan",
+    "Firm or organization": "Firma atau organisasi", "e.g. Senior associate": "mis. Associate senior",
+    "Save profile": "Simpan profil", "Profile saved.": "Profil disimpan.",
+    "Language, appearance, status and security are in Settings.": "Bahasa, tampilan, status, dan keamanan ada di Pengaturan.",
+    "Open settings": "Buka pengaturan", "Appearance": "Tampilan", "Theme": "Tema", "Dark": "Gelap", "Light": "Terang",
+    "Dark or light. Saved to your account, so it follows you to other devices.":
+        "Gelap atau terang. Tersimpan di akun Anda, jadi ikut ke perangkat lain.",
+    "Show": "Tampilkan", "All": "Semua", "Unread": "Belum dibaca", "No unread notifications.": "Tidak ada notifikasi belum dibaca.",
+})
+ID.update({"Available": "Tersedia", "Do not disturb": "Jangan ganggu", "Appear offline": "Tampil offline",
+           "Availability": "Ketersediaan"})
+ID.update({
+    "Status message": "Pesan status", "View profile": "Lihat profil", "Clear status after": "Hapus status setelah",
+    "Reset status": "Atur ulang status", "What are you up to?": "Sedang apa sekarang?",
+    "Clear status message": "Hapus pesan status", "Until {time}": "Sampai {time}",
+    "Until I change it": "Sampai saya ubah", "30 minutes": "30 menit", "1 hour": "1 jam", "2 hours": "2 jam",
+    "This week": "Minggu ini", "Plan": "Paket", "Locked": "Terkunci", "Joined": "Bergabung", "Event": "Peristiwa",
+    "Detail": "Detail", "Close": "Tutup", "Busy": "Sibuk", "Be right back": "Segera kembali",
+    "Appear away": "Tampil tidak di tempat", "Away": "Tidak di tempat",
+    "🟢 Available": "🟢 Tersedia", "🔴 Busy": "🔴 Sibuk", "⛔ Do not disturb": "⛔ Jangan ganggu",
+    "🟡 Be right back": "🟡 Segera kembali", "🟡 Appear away": "🟡 Tampil tidak di tempat",
+    "⚪ Appear offline": "⚪ Tampil offline",
+    "Change your availability and status message from the account menu at the top of the sidebar. Language, appearance and security are in Settings.":
+        "Ubah ketersediaan dan pesan status dari menu akun di bagian atas sidebar. Bahasa, tampilan, dan keamanan ada di Pengaturan.",
+})

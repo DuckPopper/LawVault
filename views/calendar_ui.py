@@ -17,11 +17,12 @@ VIEWS = ["Day", "Week", "Month"]
 _CSS = """<style>
 .lv-calt{ font-size:1.9rem; letter-spacing:-.025em; line-height:1.1; color:var(--lv-text); font-weight:700; }
 .lv-calt span{ font-weight:400; color:var(--lv-muted); }
-.st-key-cal_toolbar [data-testid="stButton"] button{ min-height:2.2rem; }
+.st-key-cal_toolbar [data-testid="stButton"] button{ min-height:2.2rem; padding-inline:.5rem; white-space:nowrap; }
+.st-key-cal_toolbar button p{ white-space:nowrap; }
 .st-key-cal_side{ position:sticky; top:4rem; }
 .lv-dayrow{ display:flex; gap:.8rem; align-items:center; }
 .lv-dayrow i{ width:9px; height:9px; border-radius:50%; flex-shrink:0; }
-.lv-dayh{ font-size:.75rem; letter-spacing:.08em; text-transform:uppercase; color:var(--lv-muted); font-weight:600; margin:.9rem 0 .2rem; }
+.lv-dayh{ font-size:.75rem; color:var(--lv-muted); font-weight:600; margin:.9rem 0 .2rem; }
 </style>"""
 
 
@@ -192,11 +193,11 @@ def _calendar(u):
     items = _my_items(u, start, end)
 
     with st.container(key="cal_toolbar"):
-        ttl, seg, nav, add = st.columns([5, 3, 2.6, 1.6], vertical_alignment="center")
+        ttl, seg, nav, add = st.columns([4, 3.2, 3.2, 2], vertical_alignment="center")
         ttl.markdown(f'<div class="lv-calt">{_title(view, first, last, anchor)}</div>', unsafe_allow_html=True)
         seg.segmented_control(t("View"), VIEWS, default="Week", key="cal_view", on_change=_keep_view,
                               format_func=t, label_visibility="collapsed")
-        p, td, n = nav.columns([1, 1.7, 1])
+        p, td, n = nav.columns([1, 2.2, 1])
         p.button("", icon=":material/chevron_left:", key="cal_prev", on_click=_shift, args=(-1,),
                  use_container_width=True, help=t("Previous"))
         td.button(t("Today"), key="cal_today", on_click=_go_today, use_container_width=True)

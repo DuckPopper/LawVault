@@ -114,6 +114,11 @@ MIGRATIONS = [
     ("events", "location_enc", "TEXT"),
     ("events", "updated_at", "REAL"),
     ("users", "paid_pro_at", "REAL"),                              # set when Pro (or Firm) is first bought
+    ("presence", "status_until", "REAL"),                         # a chosen status expires here (NULL = never)
+    ("presence", "message_enc", "TEXT"),                          # encrypted status message
+    ("users", "display_name", "TEXT NOT NULL DEFAULT ''"),         # profile: shown instead of the email prefix
+    ("users", "job_title", "TEXT NOT NULL DEFAULT ''"),
+    ("users", "organization", "TEXT NOT NULL DEFAULT ''"),
 ]
 
 

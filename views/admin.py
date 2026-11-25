@@ -18,10 +18,9 @@ def render():
     a.metric(t("Users"), len(users))
     b.metric(t("Cases"), n_cases)
     st.subheader(t("Users"))
-    st.dataframe([dict(email=r["email"], role=r["role"], plan=r["plan"],
-                       locked=r["locked_until"] > db.now(),
-                       joined=dt.datetime.fromtimestamp(r["created_at"]).strftime("%Y-%m-%d")) for r in users],
-                 use_container_width=True)
+    ui.table([t("Email"), t("Role"), t("Plan"), t("Locked"), t("Joined")],
+             [[r["email"], r["role"], r["plan"], "🔒" if r["locked_until"] > db.now() else "",
+               dt.datetime.fromtimestamp(r["created_at"]).strftime("%Y-%m-%d")] for r in users])
     locked = [r for r in users if r["locked_until"] > db.now()]
     for r in locked:
         if st.button(t("Unlock {email}", email=r["email"])):
@@ -43,6 +42,6 @@ def render():
                 twofa.admin_reset(u["id"], who)
                 st.success(t("Reset. They'll get email codes at their next login."))
     st.subheader(t("Audit log (latest 100)"))
-    st.dataframe([dict(time=dt.datetime.fromtimestamp(r["ts"]).strftime("%Y-%m-%d %H:%M:%S"),
-                       user=(r["user_id"] or "")[:8], event=r["event"], detail=r["detail"]) for r in logs],
-                 use_container_width=True)
+    ui.table([t("Time"), t("User"), t("Event"), t("Detail")],
+             [[dt.datetime.fromtimestamp(r["ts"]).strftime("%Y-%m-%d %H:%M:%S"), (r["user_id"] or "")[:8],
+               r["event"], r["detail"] or ""] for r in logs], scroll=True)

@@ -109,6 +109,36 @@ def _detail(u, row):
             st.rerun()
 
 
+def _toggle(doc_id: str):
+    st.session_state["files_sel"] = None if st.session_state.get("files_sel") == doc_id else doc_id
+
+
+def _table(shown, ids, sel_id, searching: bool):
+    """The file list, drawn with the app's own styles (st.dataframe ignores the light theme)."""
+    widths = [4, 3, 1.5, 1.3, 1.6, 1.5]
+    with st.container(key="ftable"):
+        head = st.columns(widths, vertical_alignment="center")
+        for col, label in zip(head, [t("Name"), t("Case"), t("Owner"), t("Added"), t("Reviewed"), ""]):
+            col.markdown(f'<div class="lv-th">{ui.esc(label)}</div>', unsafe_allow_html=True)
+        for r, did in zip(shown, ids):
+            on = did == sel_id
+            with st.container(key=f"frow_{did}{'_on' if on else ''}"):
+                c = st.columns(widths, vertical_alignment="center")
+                snippet = (f'<div class="lv-row-d">{ui.esc(r["snippet"])}</div>'
+                           if searching and r["snippet"] else "")
+                c[0].markdown(f'<div class="lv-td-main">{ui.esc(r["filename"])}</div>{snippet}',
+                              unsafe_allow_html=True)
+                c[1].markdown(f'<div class="lv-td">{ui.esc(r["case"] or "—")}</div>', unsafe_allow_html=True)
+                c[2].markdown(f'<div class="lv-td">{ui.esc(t("you") if r["mine"] else r["owner"])}</div>',
+                              unsafe_allow_html=True)
+                c[3].markdown(f'<div class="lv-td">{ui.esc(i18n.date_md(dt.datetime.fromtimestamp(r["created_at"])))}</div>',
+                              unsafe_allow_html=True)
+                c[4].markdown('<span class="lv-pill green">✓ AI</span>' if r["has_analysis"] else
+                              '<div class="lv-td">—</div>', unsafe_allow_html=True)
+                c[5].button(t("Close") if on else t("Open"), key=f"fopen_{did}", use_container_width=True,
+                            type="primary" if on else "secondary", on_click=_toggle, args=(did,))
+
+
 def render():
     u = st.session_state["user"]
     ui.page_header("Files", "Every document you can open, in one place: search, upload, import and export.",
@@ -129,19 +159,14 @@ def render():
         st.info(t("No files match."), icon=":material/folder_off:")
         return
     shown = rows[:PAGE_SIZE]
-    table = [{t("Name"): r["filename"], t("Case"): r["case"] or "—", t("Owner"): t("you") if r["mine"] else r["owner"],
-              t("Added"): i18n.date_md(dt.datetime.fromtimestamp(r["created_at"])),
-              t("Reviewed"): "✓" if r["has_analysis"] else ""} for r in shown]
-    if q.strip():
-        for tr, r in zip(table, shown):
-            tr[t("Match")] = r["snippet"]
-    sel = st.dataframe(table, hide_index=True, use_container_width=True, on_select="rerun",
-                       selection_mode="single-row", key="files_table")
+    ids = [r["id"] for r in shown]
+    sel_id = st.session_state.get("files_sel") if st.session_state.get("files_sel") in ids else None
+    _table(shown, ids, sel_id, bool(q.strip()))
     if len(rows) > PAGE_SIZE:
         st.caption(t("Showing the newest {n} of {total}. Narrow the search to see others.", n=PAGE_SIZE, total=len(rows)))
-    idx = (sel.selection.rows or [None])[0]
-    if idx is None:
+    if sel_id is None:
         st.caption(t("Select a row to preview, download, rename or move a file."))
         return
+    idx = ids.index(sel_id)
     with st.container(border=True):
         _detail(u, shown[idx])
