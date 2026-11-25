@@ -1,6 +1,7 @@
 import streamlit as st
 import datetime as dt
 import ai, cal, cases, config, docutil, i18n, jobs, subscription, ui
+from views import voice_ui
 from i18n import t
 
 BACKGROUND_NOTE = "This keeps running if you switch tabs. You'll get a notification when it's done."  # shown via t()
@@ -50,7 +51,8 @@ def qa():
                   "have it explained."), icon=":material/lightbulb:")
 
     busy = bool(job and job["running"])
-    q = st.chat_input(t("Waiting for the answer…") if busy else t("Ask a legal question…"), disabled=busy)
+    spoken = None if busy else voice_ui.mic(u, "qa_mic")
+    q = st.chat_input(t("Waiting for the answer…") if busy else t("Ask a legal question…"), disabled=busy) or spoken
     if q and not busy:
         jobs.start(u["id"], "chat", "", ai.ask, u, q, hist, label="Legal assistant", meta={"q": q})
         st.rerun()
@@ -72,6 +74,10 @@ def analyzer():
     u = st.session_state["user"]
     ui.page_header("Document review", "Upload a contract for a structured review: parties, operative clauses, "
                    "risk flags and points to raise.", eyebrow="AI")
+    if not subscription.has_feature(u, "doc_review"):
+        st.info(t("Document review is switched off in your plan. You can turn it on under Settings → Billing."),
+                icon=":material/lock:")
+        return
     st.caption(ai.DISCLAIMER)
     up = st.file_uploader(t("Upload a contract (PDF or TXT, up to {mb} MB)", mb=config.MAX_UPLOAD_MB),
                           type=["pdf", "txt"])

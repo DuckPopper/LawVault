@@ -39,6 +39,21 @@ CREATE TABLE IF NOT EXISTS usage(
 CREATE TABLE IF NOT EXISTS ai_chats(
   id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   role TEXT NOT NULL, content_enc TEXT NOT NULL, ts REAL NOT NULL);
+CREATE TABLE IF NOT EXISTS voice_usage(
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, month TEXT NOT NULL,
+  seconds INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(user_id, month));
+CREATE TABLE IF NOT EXISTS calendar_links(
+  id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  provider TEXT NOT NULL, account TEXT NOT NULL, cred_enc TEXT NOT NULL, cursor_enc TEXT,
+  last_sync REAL, last_error TEXT, status TEXT NOT NULL DEFAULT 'ok', created_at REAL NOT NULL);
+CREATE TABLE IF NOT EXISTS event_links(
+  link_id TEXT NOT NULL REFERENCES calendar_links(id) ON DELETE CASCADE,
+  event_id TEXT NOT NULL, remote_id TEXT NOT NULL, remote_version TEXT, local_hash TEXT,
+  all_day INTEGER NOT NULL DEFAULT 0, origin TEXT NOT NULL, PRIMARY KEY(link_id, event_id));
+CREATE UNIQUE INDEX IF NOT EXISTS idx_el_remote ON event_links(link_id, remote_id);
+CREATE TABLE IF NOT EXISTS oauth_states(
+  state TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  provider TEXT NOT NULL, expires_at REAL NOT NULL);
 CREATE INDEX IF NOT EXISTS idx_msg_case ON messages(case_id, id);
 CREATE TABLE IF NOT EXISTS calendar_settings(
   user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -90,6 +105,12 @@ MIGRATIONS = [
     ("sessions", "ip", "TEXT"),
     ("legal_work", "matter", "TEXT"),
     ("users", "lang", "TEXT NOT NULL DEFAULT 'en'"),
+    ("users", "plan_config", "TEXT"),                              # JSON for the pick-your-own plan
+    ("users", "theme", "TEXT NOT NULL DEFAULT 'dark'"),          # glass theme: dark or light
+    ("users", "voice_lang", "TEXT NOT NULL DEFAULT 'auto'"),       # Whisper language hint
+    ("events", "location_enc", "TEXT"),
+    ("events", "updated_at", "REAL"),
+    ("users", "paid_pro_at", "REAL"),                              # set when Pro (or Firm) is first bought
 ]
 
 
@@ -117,6 +138,7 @@ def init_db():
             if col not in cols:
                 c.execute(f"ALTER TABLE {table} ADD COLUMN {col} {decl}")
         c.execute("UPDATE case_members SET role='editor' WHERE role='member'")  # roles v2
+        c.execute("UPDATE users SET paid_pro_at=? WHERE paid_pro_at IS NULL AND plan IN ('pro','firm')", (now(),))
 
 
 def uid() -> str:

@@ -2,7 +2,7 @@
 import datetime as dt
 import json
 import streamlit as st
-import ai, auth, crypto, i18n, presence, privacy, session_cookie, subscription, twofa, ui
+import ai, auth, crypto, i18n, presence, privacy, session_cookie, subscription, twofa, ui, voice
 from i18n import t
 from views.policy import policy
 
@@ -87,6 +87,19 @@ def _general(u):
         auth.set_language(u["id"], pick)
         i18n.set_lang(pick)
         st.rerun()
+
+    _group("Voice input")
+    cur_voice = voice.get_lang(u)
+    r = _row("Voice input language", "The language you speak when you dictate. Auto-detect works for most "
+                                     "recordings; pick one if names or short phrases are misheard.")
+    vpick = r.selectbox(t("Voice input language"), list(voice.LANGS), index=list(voice.LANGS).index(cur_voice),
+                        format_func=lambda c: t(voice.LANGS[c]), key="set_voice_lang", label_visibility="collapsed")
+    if vpick != cur_voice:
+        voice.set_lang(u["id"], vpick)
+        st.toast(t("Voice language saved."))
+    if subscription.has_feature(u, "voice"):
+        st.caption(t("{used} of {cap} voice minutes used this month.", used=subscription.voice_seconds_used(u["id"]) // 60,
+                     cap=subscription.limits(u)["voice_minutes"]))
 
     _group("Presence")
     cur = presence.get_choice(u["id"])
@@ -222,21 +235,60 @@ def _privacy(u):
         st.markdown(f'<div class="lv-policy">\n\n{policy()}\n\n</div>', unsafe_allow_html=True)
 
 
+@st.dialog(t("Build your plan"), width="large")
+def _custom_dialog(u):
+    cur = subscription.custom_config(u) if subscription.effective_plan(u) == "custom" else subscription.default_custom()
+    st.caption(t("The ${base} base price is flat and already includes everything marked “included”. Buying more "
+                 "of an option adds its price. Switching an option off does not lower the price.",
+                 base=subscription.money(subscription.CUSTOM_BASE_CENTS / 100)))
+    units = {}
+    for key, a in subscription.ADDONS.items():
+        inc = subscription.CUSTOM_INCLUDED[key]
+        left, right = st.columns([3, 2], vertical_alignment="center")
+        left.markdown(f'<div class="lv-row-t">{ui.esc(t(a["label"]))}</div><div class="lv-row-d">'
+                      f'{ui.esc(t("{inc} included · each +{step} costs ${price}", inc=inc, step=a["step"], price=subscription.money(a["cents"] / 100)))}'
+                      f'</div>', unsafe_allow_html=True)
+        units[key] = right.number_input(t(a["label"]), 0, a["max_units"], cur["units"][key], 1, key=f"cb_{key}",
+                                        label_visibility="collapsed", help=t("Extra packs (0 = none)"))
+        right.caption(t("Total: {n}", n=inc + units[key] * a["step"]))
+    st.markdown("**" + t("Features") + "**")
+    feats = {}
+    cols = st.columns(2)
+    for i, f in enumerate(subscription.FEATURES):
+        feats[f] = cols[i % 2].toggle(t(subscription.FEATURE_LABEL[f]), cur["features"][f], key=f"cf_{f}")
+    cfg, _ = subscription.normalize_custom(units, feats)
+    q = subscription.quote(cfg)
+    ui.section("Your price")
+    st.markdown(f"{t('Base plan')}: **${subscription.money(q['base'] / 100)}**")
+    for key, n, cents in q["lines"]:
+        st.markdown(f"{t(subscription.ADDONS[key]['label'])}: +{n * subscription.ADDONS[key]['step']} → "
+                    f"**${subscription.money(cents / 100)}**")
+    st.markdown(f'<div class="lv-stat-value">{ui.esc(t("${price}/month", price=subscription.money(q["total"] / 100)))}</div>',
+                unsafe_allow_html=True)
+    if st.button(t("Subscribe for ${price}/month", price=subscription.money(q["total"] / 100)), type="primary",
+                 use_container_width=True, key="cb_go"):
+        subscription.mock_checkout(u["id"], "custom", custom=cfg)
+        st.rerun()
+
+
 def _billing(u):
     _h("Billing")
     cur = subscription.effective_plan(u)
-    lim = subscription.PLANS[cur]
+    lim = subscription.plan_info(u)
     used = subscription.ai_used_today(u["id"])
-    c1, c2 = st.columns(2)
-    c1.markdown(ui.stat("Current plan", t(lim["name"]), t("${price}/month", price=lim["price"])),
+    c1, c2, c3 = st.columns(3)
+    c1.markdown(ui.stat("Current plan", t(lim["name"]), t("${price}/month", price=subscription.money(lim["price"]))),
                 unsafe_allow_html=True)
     c2.markdown(ui.stat("AI requests today", f"{used} / {lim['daily_ai']}", "Resets at midnight",
                         used / max(1, lim["daily_ai"])), unsafe_allow_html=True)
+    vmin = subscription.voice_seconds_used(u["id"]) // 60
+    c3.markdown(ui.stat("Voice minutes this month", f"{vmin} / {lim['voice_minutes']}", "Resets monthly",
+                        vmin / max(1, lim["voice_minutes"])), unsafe_allow_html=True)
     if u["plan_expires"] and cur != "free":
         st.caption(t("Renews {date}", date=i18n.date_long(dt.datetime.fromtimestamp(u["plan_expires"]))))
 
     _group("Plans")
-    cols = st.columns(len(subscription.PLANS))
+    cols = st.columns(len(subscription.PLANS) + 1)
     for col, (key, p) in zip(cols, subscription.PLANS.items()):
         with col.container(border=True):
             badge = f'<span class="lv-pill">{ui.esc(t("Current"))}</span>' if key == cur else "&nbsp;"
@@ -246,11 +298,33 @@ def _billing(u):
             st.markdown("- " + t("{n} AI requests a day", n=p["daily_ai"]) + "\n- " + t("{n} cases", n=p["max_cases"])
                         + "\n- " + t("{n} documents", n=p["max_docs"]) + "\n- "
                         + t("{n} members per case", n=p["max_members"]) + "\n- "
-                        + t("{n} people per meeting", n=p["max_meeting_people"]))
+                        + t("{n} people per meeting", n=p["max_meeting_people"]) + "\n- "
+                        + t("{n} voice minutes a month", n=p["voice_minutes"])
+                        + ("\n- " + t("Google and Apple calendar sync") if p.get("features", {}).get(
+                            "calendar_sync", True) else ""))
             if key != "free" and key != cur and st.button(t("Upgrade to {plan}", plan=t(p["name"])), key=f"up_{key}",
                                                           type="primary", use_container_width=True):
                 subscription.mock_checkout(u["id"], key)
                 st.rerun()
+    with cols[-1].container(border=True):
+        badge = f'<span class="lv-pill">{ui.esc(t("Current"))}</span>' if cur == "custom" else "&nbsp;"
+        base = subscription.money(subscription.CUSTOM_BASE_CENTS / 100)
+        st.markdown(f'{badge}<div class="lv-stat-value">{ui.esc(t("Pick your own"))}</div>'
+                    f'<div class="lv-row-d">{ui.esc(t("From ${price} per month", price=base))}</div>',
+                    unsafe_allow_html=True)
+        inc = subscription.CUSTOM_INCLUDED
+        st.markdown("- " + t("{n} AI requests a day", n=inc["daily_ai"]) + "\n- " + t("{n} cases", n=inc["max_cases"])
+                    + "\n- " + t("{n} documents", n=inc["max_docs"]) + "\n- "
+                    + t("{n} members per case", n=inc["max_members"]) + "\n- "
+                    + t("{n} people per meeting", n=inc["max_meeting_people"]) + "\n- "
+                    + t("{n} voice minutes a month", n=inc["voice_minutes"]) + "\n- " + t("Google and Apple calendar sync") + "\n- " + t("Add more of anything"))
+        unlocked = subscription.can_pick_own(u)
+        if not unlocked:
+            st.caption(t("Available after your first month on Pro."))
+        if st.button(t("Change your plan") if cur == "custom" else t("Build your plan"), key="up_custom",
+                     type="secondary" if cur == "custom" else "primary", use_container_width=True,
+                     disabled=not unlocked):
+            _custom_dialog(u)
     st.caption(t("Demo checkout: no payment details are collected. A production build would use Stripe Checkout."))
     if cur != "free":
         r = _row("Cancel subscription", "You keep paid features until the end of the billing period.")

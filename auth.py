@@ -186,6 +186,14 @@ def set_language(user_id: str, lang: str) -> bool:
     return True
 
 
+def set_theme(user_id: str, theme: str) -> bool:
+    if theme not in ("dark", "light"):
+        return False
+    with db.conn() as c:
+        c.execute("UPDATE users SET theme=? WHERE id=?", (theme, user_id))
+    return True
+
+
 def logout(token: Optional[str]):
     if token:
         with db.conn() as c:

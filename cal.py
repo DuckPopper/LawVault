@@ -13,7 +13,7 @@ Privacy model
 from __future__ import annotations
 import datetime as dt
 from typing import List, Optional
-import crypto, db, notify, subscription
+import calsync, crypto, db, notify, subscription
 
 VISIBILITY = ("private", "busy", "details")
 _RANK = {None: 0, "busy": 1, "details": 2, "full": 3}
@@ -178,7 +178,7 @@ def viewable_calendars(viewer_id: str) -> List[dict]:
 
 # ---------- events & invites ----------
 def add_event(user, title: str, start_ts: float, end_ts: float, notes: str = "",
-              case_id: Optional[str] = None, invitee_ids: Optional[List[str]] = None):
+              case_id: Optional[str] = None, invitee_ids: Optional[List[str]] = None, location: str = ""):
     title = (title or "").strip()[:150]
     invitee_ids = [i for i in dict.fromkeys(invitee_ids or []) if i != user["id"]]
     if not title:
@@ -196,28 +196,67 @@ def add_event(user, title: str, start_ts: float, end_ts: float, notes: str = "",
         if any(not _is_teammate(c, user["id"], i) for i in invitee_ids):
             return None, "You can only invite lawyers you share a case with."
         eid = db.uid()
-        c.execute("INSERT INTO events(id,owner_id,title_enc,notes_enc,start_ts,end_ts,case_id,created_at) "
-                  "VALUES(?,?,?,?,?,?,?,?)", (eid, user["id"], crypto.encrypt(title),
-                                              crypto.encrypt((notes or "").strip()[:2000]), start_ts, end_ts,
-                                              case_id, db.now()))
+        c.execute("INSERT INTO events(id,owner_id,title_enc,notes_enc,start_ts,end_ts,case_id,created_at,location_enc,"
+                  "updated_at) VALUES(?,?,?,?,?,?,?,?,?,?)",
+                  (eid, user["id"], crypto.encrypt(title), crypto.encrypt((notes or "").strip()[:2000]), start_ts,
+                   end_ts, case_id, db.now(), crypto.encrypt((location or "").strip()[:200]), db.now()))
         for i in invitee_ids:
             c.execute("INSERT INTO event_attendees(event_id,user_id,status) VALUES(?,?,'pending')", (eid, i))
     when = dt.datetime.fromtimestamp(start_ts).strftime("%a %b %d, %H:%M")
     for i in invitee_ids:
         notify.notify(i, "invite", f"{user['email']} invited you to “{title}” on {when}.", link="calendar")
     db.audit("event_created", user["id"], f"{len(invitee_ids)} invitees")
+    calsync.kick(user["id"])
     return eid, "Meeting proposed - invitees can accept or decline." if invitee_ids else "Event added."
+
+
+def update_event(user, event_id: str, location: Optional[str] = None, add_invitee_ids: Optional[List[str]] = None,
+                 add_note: str = ""):
+    """Organizer only: set the location, invite more teammates, append a line to the notes."""
+    add_ids = [i for i in dict.fromkeys(add_invitee_ids or []) if i != user["id"]]
+    with db.conn() as c:
+        ev = c.execute("SELECT * FROM events WHERE id=? AND owner_id=?", (event_id, user["id"])).fetchone()
+        if not ev:
+            return False, "No access to that event."
+        have = {r["user_id"] for r in c.execute("SELECT user_id FROM event_attendees WHERE event_id=?", (event_id,))}
+        new = [i for i in add_ids if i not in have]
+        if len(have) + len(new) + 1 > subscription.limits(user)["max_meeting_people"]:
+            return False, "Too many people for your plan. Upgrade to invite more."
+        if any(not _is_teammate(c, user["id"], i) for i in new):
+            return False, "You can only invite lawyers you share a case with."
+        if location is not None:
+            c.execute("UPDATE events SET location_enc=? WHERE id=?",
+                      (crypto.encrypt(location.strip()[:200]), event_id))
+        if add_note.strip():
+            old = crypto.decrypt(ev["notes_enc"]) if ev["notes_enc"] else ""
+            c.execute("UPDATE events SET notes_enc=? WHERE id=?",
+                      (crypto.encrypt((old + "\n" + add_note.strip() if old else add_note.strip())[:2000]), event_id))
+        for i in new:
+            c.execute("INSERT INTO event_attendees(event_id,user_id,status) VALUES(?,?,'pending')", (event_id, i))
+        title = crypto.decrypt(ev["title_enc"])
+    when = dt.datetime.fromtimestamp(ev["start_ts"]).strftime("%a %b %d, %H:%M")
+    for i in new:
+        notify.notify(i, "invite", f"{user['email']} invited you to “{title}” on {when}.", link="calendar")
+    with db.conn() as c:
+        c.execute("UPDATE events SET updated_at=? WHERE id=?", (db.now(), event_id))
+    db.audit("event_updated", user["id"], f"{len(new)} invitees")
+    calsync.kick(user["id"])
+    return True, "Event updated."
 
 
 def delete_event(user_id: str, event_id: str) -> bool:
     """Owner deletes the event for everyone. An attendee 'deleting' just declines it."""
+    deleted = False
     with db.conn() as c:
         cur = c.execute("DELETE FROM events WHERE id=? AND owner_id=?", (event_id, user_id))
         if cur.rowcount:
             db_ok = True
+            deleted = True
         else:
             db_ok = c.execute("UPDATE event_attendees SET status='declined' WHERE event_id=? AND user_id=?",
                               (event_id, user_id)).rowcount == 1
+    if deleted:
+        calsync.kick(user_id)
     return db_ok
 
 
@@ -248,12 +287,14 @@ def _event_dict(c, r, viewer_id: str, level: str):
             (a["status"] for a in att if a["id"] == viewer_id), "organizer")
         return dict(id=r["id"], title=crypto.decrypt(r["title_enc"]), notes=crypto.decrypt(r["notes_enc"]),
                     start=r["start_ts"], end=r["end_ts"], organizer=organizer, attendees=att,
-                    my_status=my_status, mine=r["owner_id"] == viewer_id, case_id=r["case_id"])
+                    my_status=my_status, mine=r["owner_id"] == viewer_id, case_id=r["case_id"],
+                    location=crypto.decrypt(r["location_enc"]) if r["location_enc"] else "")
     if level == "details":
         return dict(id=r["id"], title=crypto.decrypt(r["title_enc"]), notes="", start=r["start_ts"],
-                    end=r["end_ts"], organizer=None, attendees=[], my_status=None, mine=False, case_id=None)
+                    end=r["end_ts"], organizer=None, attendees=[], my_status=None, mine=False, case_id=None,
+                    location="")
     return dict(id=None, title="Busy", notes="", start=r["start_ts"], end=r["end_ts"], organizer=None,
-                attendees=[], my_status=None, mine=False, case_id=None)
+                attendees=[], my_status=None, mine=False, case_id=None, location="")
 
 
 def _rows_for(c, owner_id: str, start: float, end: float, include_pending: bool):
@@ -324,4 +365,5 @@ def export_events(user_id: str):
     with db.conn() as c:
         rows = c.execute("SELECT * FROM events WHERE owner_id=?", (user_id,)).fetchall()
     return [dict(title=crypto.decrypt(r["title_enc"]), notes=crypto.decrypt(r["notes_enc"]),
+                 location=crypto.decrypt(r["location_enc"]) if r["location_enc"] else "",
                  start=r["start_ts"], end=r["end_ts"]) for r in rows]

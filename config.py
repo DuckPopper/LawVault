@@ -20,6 +20,22 @@ GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")  # fast; "thin
 GEMINI_FALLBACK_MODELS = [m.strip() for m in os.getenv(
     "GEMINI_FALLBACK_MODELS", "gemini-flash-lite-latest,gemini-3.5-flash").split(",") if m.strip()]
 GEMINI_TIMEOUT = int(os.getenv("GEMINI_TIMEOUT", "30"))  # seconds per model before trying the next
+# Voice to text (Whisper). "openai" sends the clip to OpenAI's API; "local" runs faster-whisper on this machine so
+# audio never leaves it (pip install faster-whisper).
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+WHISPER_BACKEND = os.getenv("WHISPER_BACKEND", "openai").strip().lower()
+WHISPER_MODEL = os.getenv("WHISPER_MODEL", "whisper-1")        # model name for the API
+WHISPER_LOCAL_SIZE = os.getenv("WHISPER_LOCAL_SIZE", "small")   # tiny / base / small / medium for local
+WHISPER_TIMEOUT = int(os.getenv("WHISPER_TIMEOUT", "60"))
+MAX_VOICE_SECONDS = 120          # longest single recording
+MAX_VOICE_BYTES = 10 * 1024 * 1024
+# Calendar sync. Google needs an OAuth client (Google Cloud Console > APIs > Credentials > Web application) whose
+# redirect URI is exactly GOOGLE_REDIRECT_URI. Apple needs nothing here: each user brings an app-specific password.
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8502/calendar")
+SYNC_INTERVAL = int(os.getenv("SYNC_INTERVAL", "300"))          # seconds between background syncs
+SYNC_HTTP_TIMEOUT = int(os.getenv("SYNC_HTTP_TIMEOUT", "30"))
 SMTP = dict(
     host=os.getenv("SMTP_HOST", "smtp.gmail.com"),
     port=int(os.getenv("SMTP_PORT", "587")),

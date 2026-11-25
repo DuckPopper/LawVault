@@ -1,19 +1,28 @@
 """LawVault entry point: session gate (tab state or cookie) -> navigation, presence and live notifications."""
 from pathlib import Path
 import streamlit as st
-import auth, db, i18n, jobs, notify, presence, session_cookie, subscription, ui
+import auth, calsync, db, i18n, jobs, notify, presence, session_cookie, subscription, ui
 from i18n import t
 from views import auth_ui, dashboard, cases_ui, calendar_ui, ai_ui, admin, settings, notifications_ui, legal_ui
 
 ASSETS = Path(__file__).parent / "assets"
 st.set_page_config(page_title="LawVault", page_icon=str(ASSETS / "icon.svg"), layout="wide")
 st.logo(str(ASSETS / "logo.svg"), icon_image=str(ASSETS / "icon.svg"), size="large")
-ui.inject_css()
 db.init_db()
+
+
+@st.cache_resource
+def _sync_worker():
+    calsync.start_worker()      # syncs linked Google / Apple calendars every few minutes
+    return True
+
+
+_sync_worker()
 
 # 1) Which session is this? Tab memory first, then the cookie (survives refresh).
 token = st.session_state.get("token") or session_cookie.read()
 user = auth.validate_session(token)
+ui.inject_css(ui.valid_theme(user["theme"]) if user else st.session_state.get("theme"))  # per-user glass theme
 if not user:
     if st.session_state.get("token"):
         st.toast("Session expired. Please log in again.")
@@ -26,6 +35,7 @@ if not user:
 
 st.session_state["token"] = token
 st.session_state["user"] = user
+st.session_state["theme"] = ui.valid_theme(user["theme"])
 i18n.set_lang(user["lang"])  # the saved language wins over whatever the login page was showing
 if st.session_state.pop("set_cookie", False):
     session_cookie.write(token)
@@ -100,6 +110,10 @@ def _set_language():
     auth.set_language(user["id"], st.session_state["lang_choice"])
 
 
+def _toggle_theme():
+    auth.set_theme(user["id"], "light" if ui.valid_theme(user["theme"]) == "dark" else "dark")
+
+
 def _set_presence():
     presence.set_choice(user["id"], st.session_state["presence_choice"])
 
@@ -107,7 +121,7 @@ def _set_presence():
 with st.sidebar:
     live_bar(token)
     ai_activity(user["id"], nav.url_path)
-    plan = t(subscription.PLANS[subscription.effective_plan(user)]["name"])
+    plan = t(subscription.plan_info(user)["name"])
     ui.html_block(f"""<div class="lv-user"><div class="lv-avatar">{ui.esc(ui.initials(user['email']))}</div>
         <div class="lv-user-meta"><div class="lv-user-email">{ui.esc(user['email'])}</div>
         <div class="lv-user-plan">{ui.esc(t("{plan} plan", plan=plan))}</div></div></div>""")
@@ -119,6 +133,9 @@ with st.sidebar:
     st.selectbox(t("Language"), list(i18n.LANGS), index=list(i18n.LANGS).index(i18n.valid(user["lang"])),
                  format_func=i18n.LANGS.get, key="lang_choice", on_change=_set_language,
                  label_visibility="collapsed", help=t("Interface language"))
+    dark = ui.valid_theme(user["theme"]) == "dark"
+    st.button(t("Light mode") if dark else t("Dark mode"), icon=":material/light_mode:" if dark else ":material/dark_mode:",
+              use_container_width=True, on_click=_toggle_theme, key="theme_toggle")
     if st.button(t("Log out"), icon=":material/logout:", use_container_width=True):
         auth.logout(token)
         keep = i18n.lang()

@@ -1,9 +1,10 @@
 """Calendar page: Apple Calendar-style Day / Week / Month views plus invites, team calendars, find-a-time, sharing."""
 import datetime as dt
 import streamlit as st
-import cal, cases, i18n, ui
+import cal, cal_ai, calsync, cases, i18n, subscription, ui
 from i18n import t
 from views import calendar_grid as grid
+from views import voice_ui
 
 LEVEL_LABEL = {"busy": "Busy only", "details": "Titles visible", "full": "Full"}
 VIS_HELP = {
@@ -97,7 +98,7 @@ def _my_items(u, start: float, end: float):
     items = []
     for e in cal.my_events(u["id"], start, end):
         kind = "meeting" if (e.get("attendees") or not e["mine"]) else "event"
-        sub = "" if e["mine"] else t("from {who}", who=e["organizer"])
+        sub = " · ".join(x for x in ("" if e["mine"] else t("from {who}", who=e["organizer"]), e.get("location")) if x)
         items.append(dict(e, kind=kind, tentative=e["my_status"] == "pending", sub=sub))
     for d in cases.deadlines_between(u["id"], start, end):
         items.append(dict(id=None, title=d["title"], start=d["due"], end=d["due"] + 1800, kind=d["kind"],
@@ -160,6 +161,8 @@ def _event_list(u, items, key: str, editable: bool):
             with b.popover("", icon=":material/more_horiz:", use_container_width=True):
                 st.markdown(f"**{e['title']}**")
                 st.caption(f"{i18n.date_wmd(dt.datetime.fromtimestamp(e['start']))} · {when}")
+                if e.get("location"):
+                    st.caption(f":material/location_on: {e['location']}")
                 if e.get("notes"):
                     st.caption(e["notes"])
                 if e.get("organizer") and not e["mine"]:
@@ -247,6 +250,8 @@ def _invites(u, invites):
                        f'{i18n.fmt(dt.datetime.fromtimestamp(e["start"]), "%A, %B %d · %H:%M")} – {_fmt(e["end"])} · '
                        f'{ui.esc(t("from {who}", who=e["organizer"]))}'
                        f'</div>', unsafe_allow_html=True)
+            if e.get("location"):
+                a.caption(f":material/location_on: {e['location']}")
             if e["notes"]:
                 a.caption(e["notes"])
             if b.button(t("Accept"), key=f"acc_{e['id']}", type="primary", use_container_width=True):
@@ -384,16 +389,167 @@ def _sharing(u, reqs):
                 st.rerun()
 
 
+def _say(r: dict) -> str:
+    """Turn the assistant's result into a sentence in the user's language."""
+    code = r["code"]
+    if code == "error":
+        return i18n.tm(r["error"])
+    if code == "not_scheduling":
+        return t("I couldn't find a meeting in that. Try: “Tomorrow at 12 I have a meeting.”")
+    if code == "past":
+        return t("That time has already passed. Which day and time did you mean?")
+    if code == "need_when":
+        return (t("What time is it?") if r["has_date"] else t("Which day is it?") if r["has_time"]
+                else t("Which day and time is it?"))
+    if code == "nothing_new":
+        return t("OK, “{title}” stays as it is.", title=r["title"])
+    when = i18n.date_time(dt.datetime.fromtimestamp(r["start"]))
+    who = ", ".join(r["invited"])
+    lines = [t("Added “{title}” on {when}.", title=r["title"], when=when) if code == "created"
+             else t("Updated “{title}”.", title=r["title"])]
+    if r["invited"]:
+        lines.append(t("Invited: {who}.", who=who))
+    if r["others"] or r["unsure"]:
+        lines.append(t("Noted in the event: {who}. They aren't LawVault teammates, so no invitation was sent.",
+                       who=", ".join(r["others"] + r["unsure"])))
+    if r["place"]:
+        lines.append(t("Place: {place}.", place=r["place"]))
+    if code == "created" and r.get("clash"):
+        lines.append(t("Heads up: this overlaps with “{title}”.", title=r["clash"]))
+    if code == "created" and r["ask"]:
+        lines.append(t("Who is it with, and where?") if r["ask_who"] and r["ask_where"]
+                     else t("Who is it with?") if r["ask_who"] else t("Where is it?"))
+    return "  \n".join(lines)
+
+
+def _assistant(u):
+    if not subscription.has_feature(u, "calendar_ai"):
+        st.info(t("The calendar assistant is switched off in your plan. You can turn it on under Settings → Billing."),
+                icon=":material/lock:")
+        return
+    st.caption(t("Tell me about a meeting in your own words, in Bahasa Indonesia or English, for example "
+                 "“besok jam 12 saya ada meeting”. I add it, then ask who it is with and where. "
+                 "Each message uses one AI request."))
+    log = st.session_state.setdefault("cal_ai_log", [])
+    state = st.session_state.setdefault("cal_ai_state", {})
+    for m in log:
+        with st.chat_message(m["role"], avatar=":material/person:" if m["role"] == "user" else ":material/event:"):
+            st.markdown(m["text"])
+    spoken = voice_ui.mic(u, "cal_mic")
+    typed = st.chat_input(t("Tell me about a meeting…"), key="cal_ai_input")
+    msg = typed or spoken
+    if msg:
+        with st.spinner(t("Adding to your calendar…")):
+            r = cal_ai.handle(u, msg, state)
+        log.append(dict(role="user", text=msg))
+        log.append(dict(role="assistant", text=_say(r)))
+        if r["code"] in ("created", "updated"):
+            st.session_state["cal_anchor"] = dt.date.fromtimestamp(r["start"])
+        st.rerun()
+    if log and st.button(t("Clear conversation"), key="cal_ai_clear", icon=":material/delete_sweep:"):
+        st.session_state.pop("cal_ai_log", None)
+        st.session_state.pop("cal_ai_state", None)
+        st.rerun()
+
+
+SYNC_STATUS = {"ok": "Up to date", "error": "Will retry", "reauth": "Reconnect needed", "paused": "Paused"}
+PROVIDER_LABEL = {"google": "Google Calendar", "apple": "Apple Calendar"}
+
+
+def _oauth_callback(u):
+    """Google sends the user back here with ?code=...&state=...  Finish the connection and clean the URL."""
+    qp = st.query_params
+    state = qp.get("state")
+    if not state:
+        return
+    code, denied = qp.get("code"), qp.get("error")
+    st.query_params.clear()
+    ok, msg = (calsync.google_finish(u["id"], code, state) if code and not denied
+               else (False, "Google sign-in was cancelled."))
+    st.session_state["cal_sync_flash"] = (ok, msg)
+    st.toast(i18n.tm(msg), icon=":material/task_alt:" if ok else ":material/error:")
+
+
+def _sync(u):
+    flash = st.session_state.pop("cal_sync_flash", None)
+    if flash:
+        (st.success if flash[0] else st.error)(i18n.tm(flash[1]))
+    if not subscription.has_feature(u, "calendar_sync"):
+        if subscription.effective_plan(u) == "custom":
+            st.info(t("Calendar sync is switched off in your plan. You can turn it on under Settings → Billing."),
+                    icon=":material/lock:")
+        else:
+            st.info(t("Syncing with Google and Apple Calendar is included in the Pro plan."), icon=":material/lock:")
+            st.page_link(st.session_state["_pages"]["settings"], label=t("See plans"), icon=":material/credit_card:")
+        return
+    st.caption(t("Two-way sync: events you add here appear in Google or Apple Calendar, and events from there appear "
+                 "here. Titles, notes, locations and times are shared with that service; attendees are not, so nobody "
+                 "gets an e-mail from it. Case deadlines are not synced."))
+    links = calsync.list_links(u["id"])
+    for l in links:
+        with st.container(border=True):
+            a, b, c = st.columns([5, 1.4, 1.6], vertical_alignment="center")
+            when = t("never") if not l["last_sync"] else i18n.date_time(dt.datetime.fromtimestamp(l["last_sync"]))
+            a.markdown(f'<div class="lv-row-t">{ui.esc(t(PROVIDER_LABEL[l["provider"]]))} · {ui.esc(l["account"])}</div>'
+                       f'<div class="lv-row-d">{ui.esc(t(SYNC_STATUS.get(l["status"], "Will retry")))} · '
+                       f'{ui.esc(t("Last synced: {when}", when=when))}</div>', unsafe_allow_html=True)
+            if l["last_error"]:
+                a.caption(i18n.tm(l["last_error"]))
+            if b.button(t("Sync now"), key=f"sy_{l['id']}", use_container_width=True, disabled=l["status"] == "reauth"):
+                with st.spinner(t("Syncing…")):
+                    res = calsync.sync_link(l["id"])
+                if res and res.get("error"):
+                    st.session_state["cal_sync_flash"] = (False, res["error"])
+                else:
+                    st.toast(t("Synced: {a} new, {b} updated, {c} sent.", a=res["imported"], b=res["updated"],
+                               c=res["pushed"]))
+                st.rerun()
+            with c.popover(t("Disconnect"), use_container_width=True):
+                purge = st.checkbox(t("Also remove events that came from this calendar"), key=f"sp_{l['id']}")
+                if st.button(t("Disconnect"), key=f"sd_{l['id']}", type="primary", use_container_width=True):
+                    calsync.remove_link(u["id"], l["id"], purge)
+                    st.rerun()
+    ui.section("Connect a calendar")
+    g, ap = st.columns(2, gap="large")
+    with g.container(border=True):
+        st.markdown(f"**{t('Google Calendar')}**")
+        if not calsync.google_configured():
+            st.caption(t("Google sign-in is not set up on this server yet. An administrator needs to add "
+                         "GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to the .env file."))
+        else:
+            st.caption(t("You sign in on Google's own page. LawVault never sees your Google password."))
+            if st.button(t("Connect Google Calendar"), key="g_connect", icon=":material/link:", type="primary",
+                         use_container_width=True):
+                st.session_state["g_url"] = calsync.google_auth_url(u["id"])
+            if st.session_state.get("g_url"):
+                st.link_button(t("Continue to Google"), st.session_state["g_url"], use_container_width=True)
+    with ap.container(border=True):
+        st.markdown(f"**{t('Apple Calendar (iCloud)')}**")
+        st.caption(t("Create an app-specific password at appleid.apple.com → Sign-In and Security → App-Specific "
+                     "Passwords. Your normal Apple ID password is never needed. It is stored encrypted."))
+        with st.form("apple_connect", border=False):
+            aid = st.text_input(t("Apple ID"), placeholder="name@icloud.com")
+            apw = st.text_input(t("App-specific password"), type="password", placeholder="xxxx-xxxx-xxxx-xxxx")
+            if st.form_submit_button(t("Connect Apple Calendar"), use_container_width=True):
+                with st.spinner(t("Connecting…")):
+                    ok, msg = calsync.connect_apple(u["id"], aid, apw)
+                st.session_state["cal_sync_flash"] = (ok, msg)
+                st.rerun()
+
+
 def render():
     u = st.session_state["user"]
     st.markdown(grid.CSS + _CSS, unsafe_allow_html=True)
+    _oauth_callback(u)
     invites = cal.pending_invites(u["id"])
     reqs = cal.incoming_requests(u["id"])
-    t_cal, t_inv, t_team, t_find, t_share = st.tabs([
-        t("Calendar"), f"{t('Invites')}{f' · {len(invites)}' if invites else ''}", t("Team calendars"),
-        t("Find a time"), f"{t('Sharing')}{f' · {len(reqs)}' if reqs else ''}"])
+    t_cal, t_ai, t_inv, t_team, t_find, t_share, t_sync = st.tabs([
+        t("Calendar"), t("Assistant"), f"{t('Invites')}{f' · {len(invites)}' if invites else ''}",
+        t("Team calendars"), t("Find a time"), f"{t('Sharing')}{f' · {len(reqs)}' if reqs else ''}", t("Sync")])
     with t_cal:
         _calendar(u)
+    with t_ai:
+        _assistant(u)
     with t_inv:
         _invites(u, invites)
     with t_team:
@@ -402,3 +558,5 @@ def render():
         _find(u)
     with t_share:
         _sharing(u, reqs)
+    with t_sync:
+        _sync(u)

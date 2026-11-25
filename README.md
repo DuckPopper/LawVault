@@ -52,6 +52,9 @@ See [DEMO_SCRIPT.md](DEMO_SCRIPT.md) for a 3-minute presentation walkthrough.
 | `cal.py` | Calendars: visibility, access requests, meeting invites, find-a-time |
 | `subscription.py` | Plans, limits, daily AI quota, mock checkout |
 | `ai.py` | Gemini client, Q&A, contract analysis, case summary, `@ai` in chat, deadline extraction |
+| `cal_ai.py` | Calendar assistant: "besok jam 12 saya ada meeting" adds the event, then asks who and where |
+| `calsync.py`, `calproviders.py` | Two-way Google and Apple (iCloud CalDAV) calendar sync, Pro plan and up |
+| `voice.py` | Whisper voice to text (OpenAI API or local faster-whisper), language chosen in Settings, metered per month |
 | `i18n.py`, `i18n_id.py` | Interface language: `t()` helper, localised dates, per-user setting; the Indonesian strings |
 | `legal.py` | Case analysis toolkit: six tools, prompts per jurisdiction, validated timeline / risk output, encrypted results |
 | `seed_analysis_demo.py` | Demo matter *PT Sentosa Abadi v. PT Maju Logistik* for the Case analysis page |

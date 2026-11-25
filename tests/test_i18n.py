@@ -4,14 +4,14 @@ import datetime as dt
 import pathlib
 import re
 import pytest
-import ai, auth, cases, db, i18n, i18n_id, legal, notify, presence, subscription
+import ai, auth, cases, db, i18n, i18n_id, legal, notify, presence, subscription, voice
 from conftest import make_user
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SOURCES = sorted([*ROOT.glob("*.py"), *ROOT.glob("views/*.py")])
 HELPERS_TRANSLATING_ARGS = {"page_header", "section", "stat", "_row", "_h", "_group"}
 BACKEND = ["auth.py", "otp.py", "twofa.py", "cal.py", "cases.py", "docutil.py", "ai.py", "legal.py",
-           "subscription.py", "security_checks.py"]
+           "subscription.py", "security_checks.py", "voice.py", "cal_ai.py", "calsync.py", "calproviders.py"]
 
 
 def _literal(node):
@@ -71,7 +71,9 @@ def test_strings_kept_in_data_tables_are_translated():
                *cal_ui.VIS_HELP.values(), *cal_ui.VIEWS, *cases_ui.ROLE_LABEL.values(), *legal_ui._KIND_LABEL.values(),
                *(lbl for _, lbl in grid.LEGEND), grid.BUSY, ai.DISCLAIMER, ai_ui.BACKGROUND_NOTE,
                legal_ui.BACKGROUND_NOTE, *legal.JURISDICTIONS, *legal.DRAFT_TYPES,
-               *(p["name"] for p in subscription.PLANS.values()), "High", "Medium", "Low", "Owner", "Viewer"]
+               *(p["name"] for p in subscription.PLANS.values()), "Custom",
+               *(a["label"] for a in subscription.ADDONS.values()), *subscription.FEATURE_LABEL.values(),
+               *voice.LANGS.values(), *cal_ui.SYNC_STATUS.values(), *cal_ui.PROVIDER_LABEL.values(), "High", "Medium", "Low", "Owner", "Viewer"]
     for m in legal.TOOLS.values():
         strings += [m["label"], m["blurb"]]
     missing = [s for s in strings if s not in i18n_id.ID]

@@ -22,6 +22,8 @@ ID = {
     "Language": "Bahasa",
     "Interface language": "Bahasa antarmuka",
     "Log out": "Keluar",
+    "Light mode": "Mode terang",
+    "Dark mode": "Mode gelap",
     "Invisible: you appear offline. Do Not Disturb: no pop-up notifications.":
         "Tak terlihat: Anda tampak offline. Jangan Ganggu: tanpa notifikasi pop-up.",
     "{plan} plan": "Paket {plan}",
@@ -670,3 +672,182 @@ PATTERNS = [
 
 # Words that appear inside the patterns above (captured values are looked up here too)
 ID.update({"deadline": "Tenggat", "task": "Tugas", "editor": "editor", "viewer": "pengamat"})
+
+# ---------- calendar assistant, voice input, pick-your-own plan ----------
+ID.update({
+    "Custom": "Kustom",
+    "Pick your own": "Pilih sendiri",
+    "Build your plan": "Susun paket Anda",
+    "Change your plan": "Ubah paket Anda",
+    "From ${price} per month": "Mulai ${price} per bulan",
+    "Add more of anything": "Tambah apa pun yang dibutuhkan",
+    "{n} voice minutes a month": "{n} menit suara per bulan",
+    "Voice minutes this month": "Menit suara bulan ini",
+    "Resets monthly": "Direset tiap bulan",
+    "The ${base} base price is flat and already includes everything marked “included”. Buying more of an option "
+    "adds its price. Switching an option off does not lower the price.":
+        "Harga dasar ${base} bersifat tetap dan sudah mencakup semua yang bertanda “termasuk”. Menambah suatu opsi "
+        "menambah harganya. Mematikan suatu opsi tidak menurunkan harga.",
+    "{inc} included · each +{step} costs ${price}": "{inc} termasuk · setiap +{step} seharga ${price}",
+    "Extra packs (0 = none)": "Paket tambahan (0 = tidak ada)",
+    "Total: {n}": "Total: {n}",
+    "Features": "Fitur",
+    "Your price": "Harga Anda",
+    "Base plan": "Paket dasar",
+    "Subscribe for ${price}/month": "Berlangganan ${price}/bulan",
+    "AI requests a day": "Permintaan AI per hari",
+    "Documents": "Dokumen",
+    "Members per case": "Anggota per kasus",
+    "People per meeting": "Peserta per rapat",
+    "Voice minutes a month": "Menit suara per bulan",
+    "Calendar assistant": "Asisten kalender",
+    "Voice input": "Input suara",
+    "Document review": "Tinjauan dokumen",
+    "Auto-detect": "Deteksi otomatis",
+    # settings
+    "Voice input language": "Bahasa input suara",
+    "The language you speak when you dictate. Auto-detect works for most recordings; pick one if names or short "
+    "phrases are misheard.":
+        "Bahasa yang Anda ucapkan saat mendikte. Deteksi otomatis cocok untuk kebanyakan rekaman; pilih satu bahasa "
+        "jika nama atau frasa pendek salah dikenali.",
+    "Voice language saved.": "Bahasa suara disimpan.",
+    "{used} of {cap} voice minutes used this month.": "{used} dari {cap} menit suara terpakai bulan ini.",
+    # microphone widget
+    "Speak instead of typing": "Bicara, tidak perlu mengetik",
+    "Language: {lang} (change it in Settings). {used} of {cap} voice minutes used this month. Audio is not stored.":
+        "Bahasa: {lang} (ubah di Pengaturan). {used} dari {cap} menit suara terpakai bulan ini. Audio tidak disimpan.",
+    "Record": "Rekam",
+    "Transcribing…": "Menyalin ucapan…",
+    # calendar assistant
+    "Tell me about a meeting in your own words, in Bahasa Indonesia or English, for example “besok jam 12 saya ada "
+    "meeting”. I add it, then ask who it is with and where. Each message uses one AI request.":
+        "Ceritakan rapat Anda dengan kata-kata sendiri, dalam Bahasa Indonesia atau Inggris, misalnya “besok jam 12 "
+        "saya ada meeting”. Saya menambahkannya, lalu menanyakan dengan siapa dan di mana. Setiap pesan memakai satu "
+        "permintaan AI.",
+    "Tell me about a meeting…": "Ceritakan tentang sebuah rapat…",
+    "Adding to your calendar…": "Menambahkan ke kalender Anda…",
+    "I couldn't find a meeting in that. Try: “Tomorrow at 12 I have a meeting.”":
+        "Saya tidak menemukan rapat di pesan itu. Coba: “Besok jam 12 saya ada meeting.”",
+    "That time has already passed. Which day and time did you mean?":
+        "Waktu itu sudah lewat. Hari dan jam berapa maksud Anda?",
+    "What time is it?": "Jam berapa?",
+    "Which day is it?": "Hari apa?",
+    "Which day and time is it?": "Hari dan jam berapa?",
+    "OK, “{title}” stays as it is.": "Baik, “{title}” tidak diubah.",
+    "Added “{title}” on {when}.": "“{title}” ditambahkan pada {when}.",
+    "Updated “{title}”.": "“{title}” diperbarui.",
+    "Invited: {who}.": "Diundang: {who}.",
+    "Noted in the event: {who}. They aren't LawVault teammates, so no invitation was sent.":
+        "Dicatat di acara: {who}. Mereka bukan rekan tim LawVault, jadi undangan tidak dikirim.",
+    "Place: {place}.": "Tempat: {place}.",
+    "Heads up: this overlaps with “{title}”.": "Perhatian: jadwal ini bertabrakan dengan “{title}”.",
+    "Who is it with, and where?": "Dengan siapa, dan di mana?",
+    "Who is it with?": "Dengan siapa?",
+    "Where is it?": "Di mana?",
+    "The calendar assistant is switched off in your plan. You can turn it on under Settings → Billing.":
+        "Asisten kalender dimatikan di paket Anda. Anda dapat menyalakannya di Pengaturan → Tagihan.",
+    "Document review is switched off in your plan. You can turn it on under Settings → Billing.":
+        "Tinjauan dokumen dimatikan di paket Anda. Anda dapat menyalakannya di Pengaturan → Tagihan.",
+    "Case analysis is switched off in your plan. You can turn it on under Settings → Billing.":
+        "Analisis kasus dimatikan di paket Anda. Anda dapat menyalakannya di Pengaturan → Tagihan.",
+    # messages returned by the backend
+    "The calendar assistant is not part of your plan.": "Asisten kalender bukan bagian dari paket Anda.",
+    "Voice input is not part of your plan.": "Input suara bukan bagian dari paket Anda.",
+    "That recording is empty or too large.": "Rekaman itu kosong atau terlalu besar.",
+    "Recordings can be at most 2 minutes. Please record a shorter one.":
+        "Rekaman maksimal 2 menit. Silakan rekam yang lebih pendek.",
+    "Local voice input needs faster-whisper. Run: pip install faster-whisper":
+        "Input suara lokal memerlukan faster-whisper. Jalankan: pip install faster-whisper",
+    "Voice input is not configured. Add OPENAI_API_KEY to your .env file, or set WHISPER_BACKEND=local.":
+        "Input suara belum dikonfigurasi. Tambahkan OPENAI_API_KEY ke berkas .env, atau setel WHISPER_BACKEND=local.",
+    "Monthly voice limit reached for your plan. Upgrade for more voice minutes.":
+        "Batas suara bulanan paket Anda tercapai. Tingkatkan paket untuk menambah menit suara.",
+    "The voice service is unavailable right now. Please try again.":
+        "Layanan suara sedang tidak tersedia. Silakan coba lagi.",
+    "No speech was detected. Please try again.": "Tidak ada ucapan terdeteksi. Silakan coba lagi.",
+    "No access to that event.": "Tidak ada akses ke acara itu.",
+    "Event updated.": "Acara diperbarui.",
+    "Unknown option in the plan.": "Opsi paket tidak dikenal.",
+})
+ID.update({"English": "English", "Bahasa Indonesia": "Bahasa Indonesia"})  # language names stay in their own language
+
+# ---------- Google / Apple calendar sync, Pro-first rule ----------
+ID.update({
+    "Sync": "Sinkron",
+    "Google and Apple calendar sync": "Sinkronisasi kalender Google dan Apple",
+    "Available after your first month on Pro.": "Tersedia setelah bulan pertama Anda di Pro.",
+    "Up to date": "Sudah terbaru",
+    "Will retry": "Akan dicoba lagi",
+    "Reconnect needed": "Perlu disambungkan ulang",
+    "Paused": "Dijeda",
+    "Google Calendar": "Google Calendar",
+    "Apple Calendar": "Apple Calendar",
+    "Apple Calendar (iCloud)": "Apple Calendar (iCloud)",
+    "never": "belum pernah",
+    "Last synced: {when}": "Terakhir disinkronkan: {when}",
+    "Sync now": "Sinkronkan sekarang",
+    "Syncing…": "Menyinkronkan…",
+    "Synced: {a} new, {b} updated, {c} sent.": "Tersinkron: {a} baru, {b} diperbarui, {c} terkirim.",
+    "Disconnect": "Putuskan",
+    "Also remove events that came from this calendar": "Hapus juga acara yang berasal dari kalender ini",
+    "Connect a calendar": "Hubungkan kalender",
+    "Connect Google Calendar": "Hubungkan Google Calendar",
+    "Continue to Google": "Lanjut ke Google",
+    "Connect Apple Calendar": "Hubungkan Apple Calendar",
+    "Connecting…": "Menghubungkan…",
+    "Apple ID": "Apple ID",
+    "App-specific password": "Kata sandi khusus aplikasi",
+    "See plans": "Lihat paket",
+    "Calendar sync is switched off in your plan. You can turn it on under Settings → Billing.":
+        "Sinkronisasi kalender dimatikan di paket Anda. Anda dapat menyalakannya di Pengaturan → Tagihan.",
+    "Syncing with Google and Apple Calendar is included in the Pro plan.":
+        "Sinkronisasi dengan Google dan Apple Calendar termasuk dalam paket Pro.",
+    "Two-way sync: events you add here appear in Google or Apple Calendar, and events from there appear here. "
+    "Titles, notes, locations and times are shared with that service; attendees are not, so nobody gets an e-mail "
+    "from it. Case deadlines are not synced.":
+        "Sinkronisasi dua arah: acara yang Anda tambahkan di sini muncul di Google atau Apple Calendar, dan acara dari "
+        "sana muncul di sini. Judul, catatan, lokasi, dan waktu dibagikan ke layanan itu; peserta tidak, sehingga tidak "
+        "ada yang menerima email darinya. Tenggat kasus tidak disinkronkan.",
+    "Google sign-in is not set up on this server yet. An administrator needs to add GOOGLE_CLIENT_ID and "
+    "GOOGLE_CLIENT_SECRET to the .env file.":
+        "Masuk dengan Google belum disiapkan di server ini. Administrator perlu menambahkan GOOGLE_CLIENT_ID dan "
+        "GOOGLE_CLIENT_SECRET ke berkas .env.",
+    "You sign in on Google's own page. LawVault never sees your Google password.":
+        "Anda masuk di halaman Google sendiri. LawVault tidak pernah melihat kata sandi Google Anda.",
+    "Create an app-specific password at appleid.apple.com → Sign-In and Security → App-Specific Passwords. Your "
+    "normal Apple ID password is never needed. It is stored encrypted.":
+        "Buat kata sandi khusus aplikasi di appleid.apple.com → Masuk dan Keamanan → Kata Sandi Khusus Aplikasi. "
+        "Kata sandi Apple ID biasa Anda tidak pernah diperlukan. Kata sandi ini disimpan terenkripsi.",
+    # messages from the backend
+    "Calendar sync is not part of your plan.": "Sinkronisasi kalender bukan bagian dari paket Anda.",
+    "Calendar sync is not part of your current plan.": "Sinkronisasi kalender bukan bagian dari paket Anda saat ini.",
+    "You can connect up to 4 calendars.": "Anda dapat menghubungkan hingga 4 kalender.",
+    "No such user.": "Pengguna tidak ditemukan.",
+    "This sign-in link is no longer valid. Please start again.":
+        "Tautan masuk ini sudah tidak berlaku. Silakan mulai lagi.",
+    "Google sign-in is not configured.": "Masuk dengan Google belum dikonfigurasi.",
+    "Google sign-in was cancelled.": "Masuk dengan Google dibatalkan.",
+    "Could not reach Google. Please try again.": "Tidak dapat menghubungi Google. Silakan coba lagi.",
+    "Google did not allow offline access. Remove LawVault from your Google account permissions and try again.":
+        "Google tidak mengizinkan akses offline. Hapus LawVault dari izin akun Google Anda lalu coba lagi.",
+    "Google Calendar connected.": "Google Calendar terhubung.",
+    "Apple Calendar connected.": "Apple Calendar terhubung.",
+    "Enter your Apple ID and an app-specific password.": "Masukkan Apple ID dan kata sandi khusus aplikasi.",
+    "No calendar that can hold events was found in that iCloud account.":
+        "Tidak ditemukan kalender yang dapat menyimpan acara di akun iCloud itu.",
+    "Apple did not accept that Apple ID or app-specific password.":
+        "Apple tidak menerima Apple ID atau kata sandi khusus aplikasi itu.",
+    "Apple did not accept the saved sign-in.": "Apple tidak menerima data masuk yang tersimpan.",
+    "Could not reach iCloud.": "Tidak dapat menghubungi iCloud.",
+    "iCloud is unavailable right now.": "iCloud sedang tidak tersedia.",
+    "Google no longer accepts this connection.": "Google tidak lagi menerima koneksi ini.",
+    "Google refused access to the calendar.": "Google menolak akses ke kalender.",
+    "Please connect this calendar again.": "Silakan hubungkan kalender ini lagi.",
+    "The calendar service is unavailable right now. LawVault will retry.":
+        "Layanan kalender sedang tidak tersedia. LawVault akan mencoba lagi.",
+    "Sync stopped: the other calendar returned far fewer events than expected. Nothing was deleted.":
+        "Sinkronisasi dihentikan: kalender lain mengembalikan acara jauh lebih sedikit dari yang diharapkan. "
+        "Tidak ada yang dihapus.",
+    "Pick your own is available after your first Pro month. Subscribe to Pro first.":
+        "Pilih sendiri tersedia setelah bulan Pro pertama Anda. Berlangganan Pro terlebih dahulu.",
+})

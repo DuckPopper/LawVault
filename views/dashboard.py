@@ -14,7 +14,7 @@ def render():
     u = st.session_state["user"]
     pages = st.session_state.get("_pages", {})
     plan = subscription.effective_plan(u)
-    lim = subscription.PLANS[plan]
+    lim = subscription.plan_info(u)
     name = u["email"].split("@")[0].replace(".", " ").title()
     ui.page_header(f"{_greeting()}, {name}", i18n.date_full(dt.date.today()), eyebrow="Dashboard")
 

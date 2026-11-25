@@ -9,7 +9,8 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def fresh_db():
-    import config, db
+    import calsync, config, db
+    calsync.ASYNC = False          # a change syncs inline, so tests never race a background thread
     if config.DB_PATH.exists():
         config.DB_PATH.unlink()
     db.init_db()

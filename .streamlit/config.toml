@@ -1,18 +1,18 @@
 [theme]
 base = "dark"
-primaryColor = "#D4AF63"
-backgroundColor = "#0E1116"
-secondaryBackgroundColor = "#181C24"
-textColor = "#E8EAEE"
-borderColor = "#262C38"
-linkColor = "#D4AF63"
+primaryColor = "#5bc5cf"
+backgroundColor = "#0c1410"
+secondaryBackgroundColor = "#112019"
+textColor = "#e6fbf7"
+borderColor = "#1f3a36"
+linkColor = "#5bc5cf"
 baseRadius = "10px"
 font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
 headingFont = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
 
 [theme.sidebar]
-backgroundColor = "#0A0D12"
-secondaryBackgroundColor = "#151922"
+backgroundColor = "#0a110e"
+secondaryBackgroundColor = "#112019"
 
 [server]
 maxUploadSize = 50           # MB - matches config.MAX_UPLOAD_MB

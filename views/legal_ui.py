@@ -234,6 +234,10 @@ def render():
     u = st.session_state["user"]
     ui.page_header("Case analysis", "Analyse a matter end to end: the issues, a timeline, the legal basis, the "
                    "risks, a first draft and a recommended strategy.", eyebrow="AI")
+    if not subscription.has_feature(u, "case_analysis"):
+        st.info(t("Case analysis is switched off in your plan. You can turn it on under Settings → Billing."),
+                icon=":material/lock:")
+        return
     used, cap = subscription.ai_used_today(u["id"]), subscription.limits(u)["daily_ai"]
     st.caption(t("{disclaimer}  ·  {used} / {cap} AI requests used today  ·  Personal data is masked before it "
                  "leaves LawVault.", disclaimer=t(ai.DISCLAIMER), used=used, cap=cap))
