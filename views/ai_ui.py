@@ -79,8 +79,8 @@ def analyzer():
                 icon=":material/lock:")
         return
     st.caption(ai.DISCLAIMER)
-    up = st.file_uploader(t("Upload a contract (PDF or TXT, up to {mb} MB)", mb=config.MAX_UPLOAD_MB),
-                          type=["pdf", "txt"])
+    up = st.file_uploader(t("Upload a contract (PDF, Word or TXT, up to {mb} MB)", mb=config.MAX_UPLOAD_MB),
+                          type=list(docutil.ALLOWED))
     if up and st.button(t("Save document"), type="primary", icon=":material/upload:"):
         text, err = docutil.extract_text(up.name, up.getvalue())
         if err:

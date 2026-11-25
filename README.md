@@ -106,3 +106,10 @@ Strings in the code are written in English and wrapped in `t("…")`; the Englis
 string passed to `t()` (or a backend message shown to users) has no Indonesian entry. The language is saved per user
 (`users.lang`), chosen at sign-up from the login-page switch, and can be changed in the sidebar or Settings → General.
 To add another language, add a `LANGS` entry, day and month names in `i18n.py`, and a dictionary like `i18n_id.py`.
+
+## Files, Google Docs, AI detector and News (added 2026-11-25)
+- **Files** (`views/files_ui.py`): one list of every document you can open (yours + your cases'), search by name or text, multi-file upload (PDF, Word, TXT, MD), rename / move, download as Word, PDF or TXT (and the AI review as Word/PDF).
+- **Google Docs import**: paste a link to a doc shared as "Anyone with the link can view" (`gdocs.py`). Private docs: download as .docx and upload.
+- **AI detector** (`detector.py`): offline statistical check plus an optional AI second opinion. A prompt for judgement, not proof.
+- **News** (`news.py`): public RSS from ANTARA, CNN Indonesia and BBC (no API key), per-user language and topic choices.
+- Extra dependencies: `python-docx`, `reportlab` (<4.3 for Python 3.9), `defusedxml`.

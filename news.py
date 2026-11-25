@@ -120,7 +120,11 @@ def _fetch(source: str, url: str) -> list[dict]:
             raise ValueError("https only")
         with requests.get(url, timeout=HTTP_TIMEOUT, stream=True, headers={"User-Agent": "Mozilla/5.0 LawVault"}) as r:
             r.raise_for_status()
-            body = r.raw.read(MAX_FEED_BYTES + 1, decode_content=True)
+            body = b""
+            for chunk in r.iter_content(65536):
+                body += chunk
+                if len(body) > MAX_FEED_BYTES:
+                    break
         if len(body) <= MAX_FEED_BYTES:
             items = parse_feed(body, source)
     except Exception:

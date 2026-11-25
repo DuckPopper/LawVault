@@ -177,6 +177,7 @@ def add_document(user, case_id: Optional[str], filename: str, text: str):
         if n >= subscription.limits(user)["max_docs"]:
             return None, "Document limit reached for your plan."
         did = db.uid()
+        filename = clean_filename(filename)
         c.execute("INSERT INTO documents(id,case_id,owner_id,filename_enc,text_enc,created_at) VALUES(?,?,?,?,?,?)",
                   (did, case_id, user["id"], crypto.encrypt(filename[:200]), crypto.encrypt(text), db.now()))
     db.audit("document_uploaded", user["id"], did)
@@ -222,6 +223,73 @@ def save_analysis(user_id: str, doc_id: str, analysis: str):
 def delete_document(user_id: str, doc_id: str):
     with db.conn() as c:
         c.execute("DELETE FROM documents WHERE id=? AND owner_id=?", (doc_id, user_id))
+
+
+def clean_filename(name: str) -> str:
+    """A display name only: no folders, no control characters, never empty."""
+    name = re.sub(r"[\x00-\x1f\x7f]", "", (name or "").replace("\\", "/").split("/")[-1]).strip()
+    return name[:200] or "Untitled"
+
+
+def list_accessible_documents(user_id: str, query: str = "", case_id: Optional[str] = None, scope: str = "all"):
+    """Every document this user may open: their own plus those in cases they belong to.
+    scope: all | mine | personal (not in any case). `query` matches the name or the text (case-insensitive)."""
+    with db.conn() as c:
+        rows = c.execute("""SELECT d.*, u.email AS owner_email, cs.title_enc AS case_title, m.role AS my_role
+                            FROM documents d JOIN users u ON u.id=d.owner_id
+                            LEFT JOIN cases cs ON cs.id=d.case_id
+                            LEFT JOIN case_members m ON m.case_id=d.case_id AND m.user_id=?
+                            WHERE d.owner_id=? OR m.user_id IS NOT NULL
+                            ORDER BY d.created_at DESC""", (user_id, user_id)).fetchall()
+    q, out = (query or "").strip().lower(), []
+    for r in rows:
+        if case_id and r["case_id"] != case_id:
+            continue
+        if scope == "mine" and r["owner_id"] != user_id:
+            continue
+        if scope == "personal" and r["case_id"]:
+            continue
+        name, text = crypto.decrypt(r["filename_enc"]), crypto.decrypt(r["text_enc"])
+        snippet = ""
+        if q:
+            if q in name.lower():
+                pass
+            elif q in text.lower():
+                i = text.lower().index(q)
+                snippet = ("…" if i > 60 else "") + re.sub(r"\s+", " ", text[max(0, i - 60):i + len(q) + 80]).strip() + "…"
+            else:
+                continue
+        mine = r["owner_id"] == user_id
+        out.append(dict(id=r["id"], filename=name, case_id=r["case_id"],
+                        case=crypto.decrypt(r["case_title"]) if r["case_title"] else None,
+                        owner=r["owner_email"], mine=mine, has_analysis=bool(r["analysis_enc"]),
+                        created_at=r["created_at"], chars=len(text), snippet=snippet,
+                        can_edit=mine or r["my_role"] in ("owner", "editor")))
+    return out
+
+
+def rename_document(user_id: str, doc_id: str, new_name: str) -> bool:
+    """The uploader, or an editor of the case the document is in."""
+    name = clean_filename(new_name)
+    with db.conn() as c:
+        d = c.execute("SELECT owner_id, case_id FROM documents WHERE id=?", (doc_id,)).fetchone()
+        if not d or not (d["owner_id"] == user_id or (d["case_id"] and _can_edit(c, user_id, d["case_id"]))):
+            return False
+        c.execute("UPDATE documents SET filename_enc=? WHERE id=?", (crypto.encrypt(name), doc_id))
+    return True
+
+
+def move_document(user_id: str, doc_id: str, case_id: Optional[str]):
+    """Only the uploader can move a document, and only into a case they can edit (or back to personal)."""
+    with db.conn() as c:
+        d = c.execute("SELECT owner_id FROM documents WHERE id=?", (doc_id,)).fetchone()
+        if not d or d["owner_id"] != user_id:
+            return False, "Only the person who uploaded a document can move it."
+        if case_id and not _can_edit(c, user_id, case_id):
+            return False, "You need editor access to that case."
+        c.execute("UPDATE documents SET case_id=? WHERE id=?", (case_id, doc_id))
+    db.audit("document_moved", user_id, doc_id)
+    return True, "Moved."
 
 
 # ---------- deadlines & tasks ----------

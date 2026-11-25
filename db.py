@@ -94,6 +94,9 @@ CREATE TABLE IF NOT EXISTS legal_work(
   id TEXT PRIMARY KEY, owner_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   case_id TEXT REFERENCES cases(id) ON DELETE CASCADE, tool TEXT NOT NULL,
   matter TEXT, title_enc TEXT NOT NULL, result_enc TEXT NOT NULL, created_at REAL NOT NULL);
+CREATE TABLE IF NOT EXISTS news_prefs(
+  user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  langs TEXT NOT NULL, topics TEXT NOT NULL);
 CREATE INDEX IF NOT EXISTS idx_legal_case ON legal_work(case_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_legal_owner ON legal_work(owner_id, created_at);
 """

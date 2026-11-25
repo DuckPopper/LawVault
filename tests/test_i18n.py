@@ -4,14 +4,15 @@ import datetime as dt
 import pathlib
 import re
 import pytest
-import ai, auth, cases, db, i18n, i18n_id, legal, notify, presence, subscription, voice
+import ai, auth, cases, db, detector, i18n, i18n_id, legal, news, notify, presence, subscription, voice
+import views.detector_ui as detector_ui
 from conftest import make_user
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SOURCES = sorted([*ROOT.glob("*.py"), *ROOT.glob("views/*.py")])
 HELPERS_TRANSLATING_ARGS = {"page_header", "section", "stat", "_row", "_h", "_group"}
 BACKEND = ["auth.py", "otp.py", "twofa.py", "cal.py", "cases.py", "docutil.py", "ai.py", "legal.py",
-           "subscription.py", "security_checks.py", "voice.py", "cal_ai.py", "calsync.py", "calproviders.py"]
+           "subscription.py", "security_checks.py", "voice.py", "cal_ai.py", "calsync.py", "calproviders.py", "gdocs.py", "news.py"]
 
 
 def _literal(node):
@@ -61,6 +62,11 @@ def test_every_ui_string_is_translated():
     assert not missing, "Add these to i18n_id.ID:\n" + "\n".join(f"  {f}: {k!r}" for k, f in missing.items())
 
 
+def detector_texts():
+    r = detector.analyze("word " * 20 + ". ".join(["A short one here today", "Another quite different sentence follows this one"] * 20))
+    return [detector_ui.DISCLAIMER, *(x for s in r.get("signals", []) for x in (s["name"], s["note"]))]
+
+
 def test_strings_kept_in_data_tables_are_translated():
     import views.calendar_ui as cal_ui
     import views.cases_ui as cases_ui
@@ -73,7 +79,9 @@ def test_strings_kept_in_data_tables_are_translated():
                legal_ui.BACKGROUND_NOTE, *legal.JURISDICTIONS, *legal.DRAFT_TYPES,
                *(p["name"] for p in subscription.PLANS.values()), "Custom",
                *(a["label"] for a in subscription.ADDONS.values()), *subscription.FEATURE_LABEL.values(),
-               *voice.LANGS.values(), *cal_ui.SYNC_STATUS.values(), *cal_ui.PROVIDER_LABEL.values(), "High", "Medium", "Low", "Owner", "Viewer"]
+               *voice.LANGS.values(), *cal_ui.SYNC_STATUS.values(), *cal_ui.PROVIDER_LABEL.values(), "High", "Medium", "Low", "Owner", "Viewer",
+               *news.TOPICS.values(), "Likely AI-written", "Possibly AI-assisted", "Likely human-written",
+               *(s for s in detector_texts())]
     for m in legal.TOOLS.values():
         strings += [m["label"], m["blurb"]]
     missing = [s for s in strings if s not in i18n_id.ID]

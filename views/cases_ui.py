@@ -92,8 +92,8 @@ def _docs_tab(u, case):
     cid = case["id"]
     editor = case["role"] != "viewer"
     if editor:
-        up = st.file_uploader(t("Upload PDF or TXT to this case (up to {mb} MB)", mb=config.MAX_UPLOAD_MB),
-                              type=["pdf", "txt"], key=f"up_{cid}")
+        up = st.file_uploader(t("Upload PDF, Word or TXT to this case (up to {mb} MB)", mb=config.MAX_UPLOAD_MB),
+                              type=list(docutil.ALLOWED), key=f"up_{cid}")
         if up and st.button(t("Save to case")):
             text, err = docutil.extract_text(up.name, up.getvalue())
             if err:

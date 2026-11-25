@@ -851,3 +851,98 @@ ID.update({
     "Pick your own is available after your first Pro month. Subscribe to Pro first.":
         "Pilih sendiri tersedia setelah bulan Pro pertama Anda. Berlangganan Pro terlebih dahulu.",
 })
+
+# ---------- files, Google Docs, AI detector, news (2026-11-25) ----------
+ID.update({
+    "Files": "Berkas", "News": "Berita", "AI detector": "Detektor AI",
+    # files
+    "Every document you can open, in one place: search, upload, import and export.":
+        "Semua dokumen yang dapat Anda buka, di satu tempat: cari, unggah, impor, dan ekspor.",
+    "Save to": "Simpan ke", "My files (private)": "Berkas saya (pribadi)",
+    "{where} · uploaded by {who} · {n} characters": "{where} · diunggah oleh {who} · {n} karakter",
+    "Preview": "Pratinjau", "Download": "Unduh", "AI review": "Tinjauan AI",
+    "Review as Word": "Tinjauan sebagai Word", "Review as PDF": "Tinjauan sebagai PDF",
+    "Check for AI-written text": "Periksa teks buatan AI",
+    "That file is no longer available.": "Berkas itu sudah tidak tersedia.",
+    "Rename or move": "Ubah nama atau pindahkan", "Name": "Nama", "Rename": "Ubah nama",
+    "Move to": "Pindahkan ke", "Move": "Pindahkan", "Add files": "Tambah berkas",
+    "Upload files": "Unggah berkas", "Import from Google Docs": "Impor dari Google Docs",
+    "PDF, Word, TXT or MD, up to {mb} MB each": "PDF, Word, TXT atau MD, hingga {mb} MB per berkas",
+    "Save {n} file(s)": "Simpan {n} berkas", "Saved {n} file(s).": "{n} berkas disimpan.",
+    "Paste the link of a Google Doc. It must be shared as “Anyone with the link can view”. LawVault never asks for your Google password.":
+        "Tempel tautan Google Doc. Dokumen harus dibagikan sebagai “Siapa saja yang memiliki link dapat melihat”. "
+        "LawVault tidak pernah meminta kata sandi Google Anda.",
+    "Google Docs link": "Tautan Google Docs", "Import": "Impor", "Fetching the document…": "Mengambil dokumen…",
+    "Search": "Cari", "Search names and contents…": "Cari nama dan isi…", "Show": "Tampilkan",
+    "All files": "Semua berkas", "Uploaded by me": "Diunggah oleh saya",
+    "Private (not in a case)": "Pribadi (bukan dalam kasus)", "Any case": "Kasus apa pun",
+    "No files match.": "Tidak ada berkas yang cocok.", "Added": "Ditambahkan", "Reviewed": "Ditinjau",
+    "Match": "Cocok",
+    "Showing the newest {n} of {total}. Narrow the search to see others.":
+        "Menampilkan {n} terbaru dari {total}. Persempit pencarian untuk melihat yang lain.",
+    "Select a row to preview, download, rename or move a file.":
+        "Pilih satu baris untuk melihat pratinjau, mengunduh, mengubah nama, atau memindahkan berkas.",
+    "Only the person who uploaded a document can move it.": "Hanya pengunggah dokumen yang dapat memindahkannya.",
+    "You need editor access to that case.": "Anda memerlukan akses editor ke kasus itu.",
+    "Moved.": "Dipindahkan.",
+    "That file is not a real Word document.": "Berkas itu bukan dokumen Word yang asli.",
+    "Could not read that Word document.": "Tidak dapat membaca dokumen Word itu.",
+    "Only PDF, Word (.docx), TXT and MD files are allowed.": "Hanya berkas PDF, Word (.docx), TXT, dan MD yang diizinkan.",
+    "That doesn't look like a Google Docs link (docs.google.com/document/d/…).":
+        "Itu tidak tampak seperti tautan Google Docs (docs.google.com/document/d/…).",
+    "Couldn't open that document. In Google Docs choose Share, set General access to “Anyone with the link” (Viewer) and try again, or download it as .docx and upload it instead.":
+        "Tidak dapat membuka dokumen itu. Di Google Docs pilih Bagikan, atur Akses umum ke “Siapa saja yang memiliki link” "
+        "(Pelihat) lalu coba lagi, atau unduh sebagai .docx dan unggah.",
+    "Couldn't reach Google Docs. Check your connection and try again.":
+        "Tidak dapat menghubungi Google Docs. Periksa koneksi Anda dan coba lagi.",
+    "That document is too large (max 5 MB of text).": "Dokumen itu terlalu besar (maks. 5 MB teks).",
+    "That document is empty.": "Dokumen itu kosong.",
+    # detector
+    "Check whether a text reads as written by an AI. A quick statistical check, plus an optional second opinion from the AI.":
+        "Periksa apakah suatu teks terbaca seperti ditulis AI. Pemeriksaan statistik cepat, ditambah pendapat kedua dari AI (opsional).",
+    "No AI detector is reliable. Formal legal drafting, non-native writing and edited AI text all give false results. Treat this as a prompt for your own judgement, never as proof.":
+        "Tidak ada detektor AI yang andal. Penyusunan dokumen hukum formal, tulisan non-penutur asli, dan teks AI yang disunting "
+        "dapat memberi hasil keliru. Anggap ini sebagai bahan pertimbangan Anda, bukan bukti.",
+    "Paste text": "Tempel teks", "A file": "Sebuah berkas", "Text to check": "Teks yang diperiksa",
+    "Paste the text here…": "Tempel teks di sini…", "A saved file": "Berkas tersimpan", "— choose —": "— pilih —",
+    "Or upload one": "Atau unggah satu", "Paste some text or choose a file to check.": "Tempel teks atau pilih berkas untuk diperiksa.",
+    "Checking: {name}": "Memeriksa: {name}",
+    "Add at least {n} words for a meaningful result.": "Tambahkan minimal {n} kata agar hasilnya bermakna.",
+    "AI-writing score": "Skor tulisan AI", "Based on {n} words. {d}": "Berdasarkan {n} kata. {d}",
+    "What the check looked at": "Yang diperiksa", "AI-like": "mirip AI",
+    "Sentences with stock phrases": "Kalimat dengan frasa klise AI", "Second opinion": "Pendapat kedua",
+    "Asks the AI to judge the text. Personal data is masked first. Uses 1 of your {cap} daily AI requests.":
+        "Meminta AI menilai teks. Data pribadi disamarkan lebih dulu. Memakai 1 dari {cap} permintaan AI harian Anda.",
+    "Ask the AI": "Tanya AI", "Reading…": "Membaca…", "AI opinion": "Pendapat AI",
+    "Likely AI-written": "Kemungkinan besar ditulis AI", "Possibly AI-assisted": "Mungkin dibantu AI",
+    "Likely human-written": "Kemungkinan besar ditulis manusia",
+    "Sentence rhythm": "Irama kalimat", "Vocabulary variety": "Ragam kosakata",
+    "Stock phrases": "Frasa klise", "Repeated sentence openers": "Pembuka kalimat berulang",
+    "Informal markers": "Penanda informal",
+    "People mix short and long sentences; models tend to keep them even.":
+        "Manusia mencampur kalimat pendek dan panjang; model cenderung menjaganya seragam.",
+    "Unusually uniform or repetitive wording.": "Pilihan kata yang tidak wajar seragam atau berulang.",
+    "Phrases such as “it is important to note” or “penting untuk dicatat”.":
+        "Frasa seperti “it is important to note” atau “penting untuk dicatat”.",
+    "Many sentences starting the same way.": "Banyak kalimat yang dimulai dengan cara yang sama.",
+    "Contractions and casual asides are rare in AI output (weak signal).":
+        "Singkatan dan selingan kasual jarang muncul pada tulisan AI (sinyal lemah).",
+    "The AI's answer couldn't be read. Please try again.": "Jawaban AI tidak dapat dibaca. Silakan coba lagi.",
+    # news
+    "Current affairs in English and Bahasa Indonesia, filtered to the topics you follow.":
+        "Berita terkini dalam bahasa Inggris dan Indonesia, disaring sesuai topik yang Anda ikuti.",
+    "Headlines from ANTARA, CNN Indonesia and BBC. Refreshed every 10 minutes. Tap a headline to read the full story on the publisher's site.":
+        "Berita utama dari ANTARA, CNN Indonesia, dan BBC. Diperbarui setiap 10 menit. Ketuk judul untuk membaca berita lengkap di situs penerbit.",
+    "Refresh": "Segarkan", "Choose what you see": "Pilih yang ingin Anda lihat", "Languages": "Bahasa",
+    "Topics": "Topik", "Save my choices": "Simpan pilihan saya", "Loading headlines…": "Memuat berita utama…",
+    "No headlines right now. The publishers may be unreachable; try again in a minute.":
+        "Belum ada berita utama. Penerbit mungkin tidak dapat dijangkau; coba lagi sebentar lagi.",
+    "Law & politics": "Hukum & politik", "Finance & business": "Keuangan & bisnis", "Technology": "Teknologi",
+    "Sports": "Olahraga", "World": "Dunia", "Top stories": "Berita utama",
+    "Preferences saved.": "Preferensi disimpan.",
+    "Pick at least one language and one topic.": "Pilih setidaknya satu bahasa dan satu topik.",
+})
+ID.update({
+    "Upload a contract (PDF, Word or TXT, up to {mb} MB)": "Unggah kontrak (PDF, Word atau TXT, hingga {mb} MB)",
+    "Upload PDF, Word or TXT to this case (up to {mb} MB)": "Unggah PDF, Word atau TXT ke kasus ini (hingga {mb} MB)",
+})

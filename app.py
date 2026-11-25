@@ -3,7 +3,7 @@ from pathlib import Path
 import streamlit as st
 import auth, calsync, db, i18n, jobs, notify, presence, session_cookie, subscription, ui
 from i18n import t
-from views import auth_ui, dashboard, cases_ui, calendar_ui, ai_ui, admin, settings, notifications_ui, legal_ui
+from views import auth_ui, dashboard, cases_ui, calendar_ui, ai_ui, admin, settings, notifications_ui, legal_ui, files_ui, news_ui, detector_ui
 
 ASSETS = Path(__file__).parent / "assets"
 st.set_page_config(page_title="LawVault", page_icon=str(ASSETS / "icon.svg"), layout="wide")
@@ -50,6 +50,10 @@ pages = {
                         url_path="calendar"),
     "analysis": st.Page(legal_ui.render, title=t("Case analysis"), icon=":material/troubleshoot:",
                         url_path="analysis"),
+    "files": st.Page(files_ui.render, title=t("Files"), icon=":material/folder_open:", url_path="files"),
+    "news": st.Page(news_ui.render, title=t("News"), icon=":material/newspaper:", url_path="news"),
+    "detector": st.Page(detector_ui.render, title=t("AI detector"), icon=":material/fingerprint:",
+                        url_path="detector"),
     "qa": st.Page(ai_ui.qa, title=t("Legal assistant"), icon=":material/auto_awesome:", url_path="qa"),
     "docs": st.Page(ai_ui.analyzer, title=t("Document review"), icon=":material/description:", url_path="docs"),
     "notifications": st.Page(notifications_ui.render, title=t("Notifications"), icon=":material/notifications:",
@@ -60,8 +64,8 @@ if user["role"] == "admin":
     pages["admin"] = st.Page(admin.render, title=t("Admin"), icon=":material/admin_panel_settings:",
                              url_path="admin")
 nav = st.navigation({
-    t("Workspace"): [pages["dashboard"], pages["cases"], pages["calendar"]],
-    t("AI"): [pages["analysis"], pages["qa"], pages["docs"]],
+    t("Workspace"): [pages["dashboard"], pages["cases"], pages["calendar"], pages["files"], pages["news"]],
+    t("AI"): [pages["analysis"], pages["qa"], pages["docs"], pages["detector"]],
     t("You"): [pages[k] for k in ("notifications", "settings", "admin") if k in pages],
 })
 # Older notification links point at the pages that now live inside Settings
