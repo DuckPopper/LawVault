@@ -29,6 +29,38 @@
         "8502"
       ],
       "port": 8502
+    },
+    {
+      "name": "lawvault-demo-otp",
+      "runtimeExecutable": "/usr/bin/env",
+      "runtimeArgs": [
+        "DEV_MODE=0",
+        "LAWVAULT_DATA_DIR=/Users/jehuda/UAS Htek LawVault/data-demo",
+        ".venv/bin/streamlit",
+        "run",
+        "app.py",
+        "--server.headless",
+        "true",
+        "--server.port",
+        "8503"
+      ],
+      "port": 8503
+    },
+    {
+      "name": "lawvault-demo-dev",
+      "runtimeExecutable": "/usr/bin/env",
+      "runtimeArgs": [
+        "DEV_MODE=1",
+        "LAWVAULT_DATA_DIR=/Users/jehuda/UAS Htek LawVault/data-demo",
+        ".venv/bin/streamlit",
+        "run",
+        "app.py",
+        "--server.headless",
+        "true",
+        "--server.port",
+        "8505"
+      ],
+      "port": 8505
     }
   ]
 }

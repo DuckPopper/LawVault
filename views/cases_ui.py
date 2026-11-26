@@ -1,6 +1,6 @@
 import datetime as dt
 import streamlit as st
-import ai, auth, cases, config, docutil, i18n, presence, ui
+import ai, auth, cases, config, contacts, docutil, i18n, presence, ui
 from i18n import t
 
 ROLE_LABEL = {"owner": "Owner", "editor": "Editor", "viewer": "Viewer (read-only)"}
@@ -210,6 +210,26 @@ def _team_tab(u, case):
         else:
             c2.write(_role_label(m["role"]))
     if case["role"] == "owner":
+        for inv in cases.pending_invites(u["id"], cid):
+            p1, p2, p3 = st.columns([4, 2, 1])
+            p1.write(f"✉️ {inv['email']}")
+            p1.caption(t("Invited, not signed up yet"))
+            p2.write(_role_label(inv["role"]))
+            if p3.button(t("Cancel"), key=f"ci_{inv['email']}"):
+                cases.cancel_invite(u["id"], cid, inv["email"])
+                st.rerun()
+        member_emails = {m["email"] for m in mem} | {i["email"] for i in cases.pending_invites(u["id"], cid)}
+        pick = [ct for ct in contacts.listing(u["id"]) if ct["email"] not in member_emails]
+        if pick:
+            p1, p2, p3 = st.columns([3, 2, 1])
+            who = p1.selectbox(t("Add from contacts"), [ct["email"] for ct in pick], key=f"pick_{cid}")
+            prole = p2.selectbox(t("As"), cases.ASSIGNABLE_ROLES, format_func=_role_label, key=f"pickrole_{cid}")
+            p3.write("")
+            if p3.button(t("Add"), key=f"pickadd_{cid}"):
+                ok, msg = cases.add_member(u, cid, who, prole)
+                (st.success if ok else st.error)(i18n.tm(msg))
+                if ok:
+                    st.rerun()
         with st.form("addm", clear_on_submit=True):
             a, b = st.columns([3, 2])
             em = a.text_input(t("Invite a lawyer by email"))
@@ -230,6 +250,23 @@ def _team_tab(u, case):
         st.rerun()
 
 
+def _contacts_panel(u):
+    st.caption(t("Coworkers and friends you work with. Only you can see this list."))
+    for ct in contacts.listing(u["id"]):
+        a, b = st.columns([5, 1])
+        a.write(f"{ct['name']} · {ct['email']}" if ct["name"] else ct["email"])
+        if b.button(t("Remove"), key=f"ctrm_{ct['email']}"):
+            contacts.remove(u["id"], ct["email"])
+            st.rerun()
+    with st.form("addcontact", clear_on_submit=True):
+        a, b = st.columns([3, 2])
+        em = a.text_input(t("Email"))
+        nm = b.text_input(t("Name (optional)"))
+        if st.form_submit_button(t("Save contact")):
+            ok, msg = contacts.add(u["id"], em, nm)
+            (st.success if ok else st.error)(i18n.tm(msg))
+
+
 def render():
     u = st.session_state["user"]
     ui.page_header("Cases", "Encrypted team chat, documents, deadlines and members for each matter.",
@@ -244,6 +281,9 @@ def render():
                 if cid:
                     st.session_state["case_id"] = cid
                     st.rerun()
+
+    with st.expander(t("My contacts"), icon=":material/group:"):
+        _contacts_panel(u)
 
     my = cases.list_cases(u["id"])
     if not my:

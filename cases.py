@@ -8,7 +8,7 @@ Roles:  owner  - everything, manages members and roles, deletes the case
 from __future__ import annotations
 import re
 from typing import Optional
-import crypto, db, notify, subscription
+import contacts, crypto, db, notify, subscription
 
 ROLES = ("owner", "editor", "viewer")
 ASSIGNABLE_ROLES = ("editor", "viewer")
@@ -86,6 +86,7 @@ def add_member(user, case_id: str, email: str, role: str = "editor"):
         if _role(c, user["id"], case_id) != "owner":
             return False, "Only the case owner can add members."
         n = c.execute("SELECT COUNT(*) n FROM case_members WHERE case_id=?", (case_id,)).fetchone()["n"]
+        n += c.execute("SELECT COUNT(*) n FROM case_invites WHERE case_id=? AND email<>?", (case_id, email)).fetchone()["n"]
         if n >= subscription.limits(user)["max_members"]:
             return False, "Member limit reached for your plan."
         t = c.execute("SELECT id FROM users WHERE email=?", (email,)).fetchone()
@@ -94,11 +95,48 @@ def add_member(user, case_id: str, email: str, role: str = "editor"):
                             (case_id, t["id"], role, db.now()))
             if cur.rowcount:
                 added = (t["id"], _title(c, case_id))
+        else:
+            c.execute("INSERT OR REPLACE INTO case_invites(case_id,email,role,invited_by,created_at) VALUES(?,?,?,?,?)",
+                      (case_id, email, role, user["id"], db.now()))
     if added:
         notify.notify(added[0], "case_added", f"{user['email']} added you to “{added[1]}” as {role}.", link="cases")
     db.audit("member_add_attempt", user["id"], case_id)
+    contacts.add(user["id"], email)  # anyone you work with lands in your contacts
     # Same reply whether or not the email is registered (no account enumeration).
-    return True, "If that lawyer has a LawVault account, they now have access."
+    return True, "If that lawyer has a LawVault account, they now have access. Otherwise they are invited and join the case when they sign up."
+
+
+def pending_invites(user_id: str, case_id: str):
+    """Owner only: emails invited to the case who haven't signed up yet."""
+    with db.conn() as c:
+        if _role(c, user_id, case_id) != "owner":
+            return []
+        rows = c.execute("SELECT email,role FROM case_invites WHERE case_id=? ORDER BY created_at", (case_id,)).fetchall()
+    return [dict(email=r["email"], role=r["role"]) for r in rows]
+
+
+def cancel_invite(user_id: str, case_id: str, email: str) -> bool:
+    with db.conn() as c:
+        if _role(c, user_id, case_id) != "owner":
+            return False
+        cur = c.execute("DELETE FROM case_invites WHERE case_id=? AND email=?", (case_id, (email or "").strip().lower()))
+    return cur.rowcount == 1
+
+
+def accept_pending(user_id: str, email: str) -> int:
+    """Called after signup: turn invites for this email into memberships. Returns how many."""
+    email = (email or "").strip().lower()
+    joined = []
+    with db.conn() as c:
+        for r in c.execute("SELECT i.case_id,i.role,i.invited_by FROM case_invites i JOIN cases cs ON cs.id=i.case_id "
+                           "WHERE i.email=?", (email,)).fetchall():
+            c.execute("INSERT OR IGNORE INTO case_members(case_id,user_id,role,added_at) VALUES(?,?,?,?)",
+                      (r["case_id"], user_id, r["role"], db.now()))
+            joined.append((r["case_id"], r["role"], _title(c, r["case_id"])))
+        c.execute("DELETE FROM case_invites WHERE email=?", (email,))
+    for _cid, role, title in joined:
+        notify.notify(user_id, "case_added", f"You were invited to “{title}” as {role}.", link="cases")
+    return len(joined)
 
 
 def set_role(user_id: str, case_id: str, target_id: str, role: str) -> bool:

@@ -122,6 +122,19 @@ def has_feature(user, feature: str) -> bool:
     return plan_info(user).get("features", {}).get(feature, True)
 
 
+def can_customize_theme(user) -> bool:
+    """The accent colour wheel is a paid perk: Pro, Firm (enterprise) and pick-your-own plans."""
+    return effective_plan(user) != "free"
+
+
+def accent_hue(user):
+    """The hue to paint the app with: the saved one, but only while the plan still includes the customizer."""
+    try:
+        return user["accent_hue"] if can_customize_theme(user) else None
+    except (KeyError, IndexError):
+        return None
+
+
 def can_pick_own(user) -> bool:
     """Pick-your-own is unlocked by buying Pro (or Firm) once. After that it can be chosen any time."""
     try:

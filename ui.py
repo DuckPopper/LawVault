@@ -3,26 +3,28 @@
 All user-supplied text that ends up inside raw HTML must go through `esc()` first.
 """
 from __future__ import annotations
+import colorsys
 import html
+import re
 import streamlit as st
 from i18n import t
 
 # Design tokens. Two themes share one stylesheet; the tokens below are swapped per user (users.theme).
 THEMES = {
     "dark": dict(BG="#0c1410", BG2="#183a36", BG3="#1c4144", GLOW="#2f7f88",
-                 SURFACE="rgba(148,220,210,0.06)", SURFACE_2="rgba(148,220,210,0.12)",
-                 BORDER="rgba(148,220,210,0.16)", EDGE="rgba(148,220,210,0.24)",
-                 TEXT="#e6fbf7", MUTED="rgba(230,251,247,0.62)", ACCENT="#5bc5cf", ON_ACCENT="#0c1410",
-                 HOVER="rgba(148,220,210,0.10)", INPUT="rgba(12,20,16,0.55)", POP="#112019",
+                 SURFACE="rgba(10,28,26,0.88)", SURFACE_2="rgba(14,38,38,0.96)",
+                 BORDER="rgba(148,220,210,0.16)", EDGE="rgba(148,220,210,0.6)",
+                 TEXT="#ffffff", MUTED="rgba(255,255,255,0.78)", ACCENT="#5bc5cf", ON_ACCENT="#0c1410",
+                 HOVER="rgba(148,220,210,0.10)", INPUT="rgba(6,16,15,0.95)", POP="#112019",
                  SHADE="rgba(0,0,0,0.35)", SCHEME="dark", RED="#FF6B63", AMBER="#FFB340", GREEN="#4CD98A",
                  PILL_BG="rgba(91,197,207,0.16)",
                  LINE="rgba(255,255,255,.065)", LINE2="rgba(255,255,255,.025)", WEEKEND="rgba(0,0,0,.14)",
                  EV_TEXT="#F2F4F8", EV_RING="rgba(14,17,22,.9)", SEL="rgba(255,255,255,.07)", DIM="rgba(138,147,165,.45)"),
     "light": dict(BG="#e9faf7", BG2="#94dcd2", BG3="#bff0e9", GLOW="#5bc5cf",
-                  SURFACE="rgba(255,255,255,0.55)", SURFACE_2="rgba(255,255,255,0.78)",
-                  BORDER="rgba(31,47,37,0.12)", EDGE="rgba(255,255,255,0.95)",
-                  TEXT="#1f2f25", MUTED="rgba(31,47,37,0.64)", ACCENT="#306761", ON_ACCENT="#ffffff",
-                  HOVER="rgba(48,103,97,0.09)", INPUT="rgba(255,255,255,0.72)", POP="#f4fffd",
+                  SURFACE="rgba(255,255,255,0.92)", SURFACE_2="rgba(255,255,255,0.98)",
+                  BORDER="rgba(31,47,37,0.12)", EDGE="rgba(0,0,0,0.28)",
+                  TEXT="#000000", MUTED="rgba(0,0,0,0.72)", ACCENT="#306761", ON_ACCENT="#ffffff",
+                  HOVER="rgba(48,103,97,0.09)", INPUT="rgba(255,255,255,0.95)", POP="#f4fffd",
                   SHADE="rgba(31,47,37,0.14)", SCHEME="light", RED="#C2362E", AMBER="#B4690E", GREEN="#1C7A4B",
                   PILL_BG="rgba(48,103,97,0.13)",
                   LINE="rgba(31,47,37,.10)", LINE2="rgba(31,47,37,.045)", WEEKEND="rgba(31,47,37,.055)",
@@ -33,6 +35,50 @@ DEFAULT_THEME = "dark"
 
 def valid_theme(code) -> str:
     return code if code in THEMES else DEFAULT_THEME
+
+
+# ---------- custom accent colour (Pro / Firm) ----------
+# The built-in palette is teal. A chosen hue on the colour wheel rotates every tinted colour of the palette by the same
+# amount, so the dark theme stays black and the light theme stays white (colours with no saturation do not move).
+BASE_HUE = 184
+_KEEP = {"TEXT", "MUTED", "ON_ACCENT", "RED", "AMBER", "GREEN", "SCHEME", "EV_TEXT", "EV_RING"}   # never recoloured
+_COLOR = re.compile(r"#[0-9a-fA-F]{6}\b|rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,", re.I)
+
+
+def valid_hue(h):
+    """A whole hue 0-359, or None (use the default teal)."""
+    try:
+        h = int(h)
+    except (TypeError, ValueError):
+        return None
+    return h if 0 <= h < 360 and h != BASE_HUE else None
+
+
+def _rotate(rgb, delta):
+    r, g, b = (c / 255 for c in rgb)
+    hh, ll, ss = colorsys.rgb_to_hls(r, g, b)
+    r, g, b = colorsys.hls_to_rgb((hh + delta / 360) % 1, ll, ss)
+    return round(r * 255), round(g * 255), round(b * 255)
+
+
+def shift_hue(text: str, hue) -> str:
+    """Rotate every hex / rgba() colour in `text` from the teal base towards `hue` degrees."""
+    hue = valid_hue(hue)
+    if hue is None:
+        return text
+    delta = hue - BASE_HUE
+
+    def sub(m):
+        if m.group(1) is None:
+            v = m.group(0)[1:]
+            return "#%02x%02x%02x" % _rotate(tuple(int(v[i:i + 2], 16) for i in (0, 2, 4)), delta)
+        return "rgba(%d,%d,%d," % _rotate((int(m.group(1)), int(m.group(2)), int(m.group(3))), delta)
+    return _COLOR.sub(sub, text)
+
+
+def accent_preview(hue, theme: str = "dark") -> str:
+    """The accent colour a hue gives in `theme`, for swatches."""
+    return shift_hue(THEMES[valid_theme(theme)]["ACCENT"], hue)
 
 
 _CSS = """
@@ -46,6 +92,9 @@ _CSS = """
   color-scheme: __SCHEME__;
 }
 html, body, [class*="st-"], button, input, textarea, select { -webkit-font-smoothing: antialiased; }
+
+/* the zero-height helper iframes (dark-mode guard) must not take any space */
+[data-testid="stElementContainer"][height="1px"]{ display:none !important; }
 
 /* ---------- liquid glass backdrop ---------- */
 [data-testid="stApp"]{
@@ -125,7 +174,7 @@ hr{ border-color: var(--lv-border) !important; }
   display:flex; align-items:center; justify-content:center; box-sizing:border-box; }
 [data-testid="stPopoverBody"]{ background: var(--lv-pop) !important; border:none !important;
   border-radius:16px !important; box-shadow: 0 18px 50px var(--lv-shade) !important; color: var(--lv-text); }
-[data-testid="stPopoverBody"]:has(.lv-pm-head){ width:320px !important; min-width:320px; max-height:82vh; overflow-y:auto;
+[data-testid="stPopoverBody"]:has(.lv-pm-head){ width:320px !important; min-width:320px; max-height:calc(100vh - 11rem); overflow-y:auto;
   padding:.9rem .7rem .6rem !important; }
 [data-testid="stPopoverBody"]:has(.lv-pm-head) [data-testid="stVerticalBlock"]{ gap:1px; }
 [data-testid="stPopoverBody"]:has(.lv-pm-head) [data-testid="stHorizontalBlock"]{ gap:.4rem; }
@@ -176,14 +225,16 @@ hr{ border-color: var(--lv-border) !important; }
   backdrop-filter: var(--lv-glass); -webkit-backdrop-filter: var(--lv-glass);
   box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 8px 28px var(--lv-shade); }
 [data-testid="stVerticalBlockBorderWrapper"]:has(> div > [data-testid="stVerticalBlock"]){ border-radius: 16px; }
-[data-testid="stForm"]{ border-radius: 14px !important; box-shadow: none !important; background: transparent !important;
+[data-testid="InputInstructions"]{ display:none !important; }  /* "Press Enter to submit form" hint */
+[data-testid="stForm"]{ padding: 1.4rem 1.5rem 1.5rem !important; border-radius: 18px !important; box-shadow: none !important; background: transparent !important;
   backdrop-filter: none; -webkit-backdrop-filter: none; }
 [data-testid="stExpander"] details{ border-radius: 14px !important; }
 [data-testid="stExpander"] summary{ font-weight: 500; }
 [data-testid="stMetric"]{ border-radius:16px; padding: 1rem 1.1rem; }
 [data-testid="stMetricLabel"] p{ color: var(--lv-muted) !important; font-size:.86rem !important; }
 [data-testid="stMetricValue"]{ font-weight: 650; letter-spacing:-.02em; color: var(--lv-text); }
-[data-testid="stAlert"]{ border-radius: 14px; backdrop-filter: var(--lv-glass); -webkit-backdrop-filter: var(--lv-glass); }
+[data-testid="stAlert"]{ border-radius: 14px; background: var(--lv-surface-2) !important; border: 1px solid var(--lv-edge) !important;
+  box-shadow: inset 3px 0 0 var(--lv-accent), 0 6px 20px var(--lv-shade); backdrop-filter: var(--lv-glass); -webkit-backdrop-filter: var(--lv-glass); }
 
 /* ---------- controls ---------- */
 .stButton button, .stDownloadButton button, .stFormSubmitButton button, [data-testid="stPopover"] button{
@@ -224,7 +275,15 @@ hr{ border-color: var(--lv-border) !important; }
   background: var(--lv-pill) !important; color: var(--lv-accent) !important; border-color: var(--lv-accent) !important; font-weight:600; }
 [data-baseweb="checkbox"] > div:first-child, [data-baseweb="radio"] > div:first-child{ border-color: var(--lv-edge) !important; }
 [data-testid="stAlert"]{ color: var(--lv-text); }
-[data-testid="stAlert"] p{ color: var(--lv-text) !important; }
+.stApp [data-testid="stAlert"], .stApp [data-testid="stAlert"] *, .stApp [data-testid="stAlertContainer"] *{
+  color: var(--lv-text) !important; -webkit-text-fill-color: var(--lv-text) !important; opacity: 1 !important; }
+.stApp [data-testid="stAlertContainer"]{ background: var(--lv-surface-2) !important; border-radius: 14px; }
+[data-testid="stAlert"] svg{ color: var(--lv-accent) !important; fill: var(--lv-accent) !important; }
+/* browser autofill paints inputs yellow; keep our own colours */
+input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, textarea:-webkit-autofill{
+  -webkit-text-fill-color: var(--lv-text) !important; caret-color: var(--lv-text);
+  -webkit-box-shadow: 0 0 0 1000px var(--lv-input) inset !important; box-shadow: 0 0 0 1000px var(--lv-input) inset !important;
+  transition: background-color 9999s ease-in-out 0s; }
 [data-testid="stFileUploaderDropzone"] *, [data-testid="stAudioInput"] *{ color: var(--lv-text); }
 [data-testid="stAudioInput"], [data-testid="stDataFrame"]{ background: var(--lv-input); border-radius:12px; }
 [data-testid="stProgress"] > div > div{ background: var(--lv-surface-2) !important; }
@@ -354,17 +413,119 @@ h1, .lv-title{ font-size: 2.4rem !important; line-height:1.1; }
 [data-testid="stSidebarNavLink"] > span:last-child{ font-size:.93rem; }
 
 .st-key-settings_nav label p{ white-space:nowrap; }
-[data-testid="stPageLink-NavLink"]{ border-radius:12px; padding:.45rem .8rem; }
+[data-testid="stPageLink-NavLink"]{ border-radius:12px; }
 [data-testid="stPageLink-NavLink"]:hover{ background: var(--lv-hover); }
 
 [data-testid="stFileUploaderDropzone"] button{ background: var(--lv-surface-2) !important; border:1px solid var(--lv-edge) !important; border-radius:12px !important; }
 [data-testid="stFileUploaderDropzone"] button:hover{ border-color: var(--lv-accent) !important; }
 [data-testid="stFileUploaderDropzone"] button *{ color: var(--lv-text) !important; }
 
+/* ---------- calendar: clickable mini month ---------- */
+.lvmini-t{ white-space:nowrap; font-size:.95rem; font-weight:600; color:var(--lv-muted); margin:0; text-align:center; letter-spacing:.01em; }
+.lvmini-h{ text-align:center; font-size:.8rem; font-weight:700; color:var(--lv-muted); padding:.5rem 0 .15rem; }
+.st-key-cal_mini [data-testid="stHorizontalBlock"]{ gap:0 !important; flex-wrap:nowrap !important; }
+.st-key-cal_mini [data-testid="stColumn"]{ min-width:0 !important; flex:1 1 0 !important; width:auto !important; }
+.st-key-cal_mini [data-testid="stVerticalBlock"]{ gap:4px; }
+.st-key-cal_mini [data-testid="stMarkdownContainer"]{ margin:0 !important; }
+.st-key-cal_mini [data-testid="stElementContainer"]{ display:flex; justify-content:center; }
+.st-key-cal_mini .stButton{ width:100%; display:flex; justify-content:center; }
+.st-key-cal_mini .stButton button{ width:100% !important; max-width:34px; min-width:0 !important; min-height:0 !important; height:auto; aspect-ratio:1; flex:none; padding:0 !important;
+  border:none !important; background:transparent !important; border-radius:50% !important; box-shadow:none !important; min-width:0; }
+.st-key-cal_mini .stButton button p{ font-size:.85rem; font-weight:600; color:var(--lv-text) !important; font-variant-numeric:tabular-nums; }
+.st-key-cal_mini .stButton button:hover{ background:var(--lv-hover) !important; }
+[class*="st-key-mini_"][class*="_fO"] button p{ color:var(--lv-dim) !important; font-weight:500 !important; }
+[class*="st-key-mini_"][class*="_fS"] button p{ font-weight:700 !important; }
+.st-key-cal_mini [data-testid="stHorizontalBlock"]:has([class*="st-key-minav_"]) > [data-testid="stColumn"]:nth-child(2){ flex:5 1 0 !important; }
+.st-key-cal_mini [class*="st-key-minav_"] button{ width:30px !important; min-width:30px; max-width:30px; height:30px; min-height:30px !important; background:var(--lv-hover) !important; }
+.st-key-cal_mini [class*="st-key-minav_"] button p{ display:none; }
+.st-key-cal_mini [class*="st-key-minav_"] button span{ color:var(--lv-text) !important; font-size:1.25rem; }
+[class*="st-key-mini_"][class*="_fT"] button{ background:#FF453A !important; }
+[class*="st-key-mini_"][class*="_fT"] button p{ color:#fff !important; font-weight:700; }
+[class*="st-key-mini_"][class*="_fH"] button::after{ content:""; position:absolute; bottom:2px; left:50%; width:3px; height:3px;
+  margin-left:-1.5px; border-radius:50%; background:var(--lv-muted); }
+[class*="st-key-mini_"] button{ position:relative; }
+
+/* ---------- dialogs follow the theme (they default to Streamlit's dark base) ---------- */
+[data-testid="stDialog"] [role="dialog"]{ background: var(--lv-pop) !important; color: var(--lv-text);
+  border:1px solid var(--lv-edge); border-radius:18px; box-shadow: 0 24px 70px var(--lv-shade); }
+[data-testid="stDialog"] [role="dialog"] h1, [data-testid="stDialog"] [role="dialog"] h2{ font-family: var(--lv-serif); font-weight:500 !important; }
+[data-testid="stDialog"] [role="dialog"] button[aria-label="Close"]{ background:transparent !important; border:none !important; color: var(--lv-muted); }
+
+/* ---------- date picker popup follows the theme ---------- */
+[data-baseweb="calendar"]{ background: var(--lv-pop) !important; color: var(--lv-text) !important; }
+[data-baseweb="calendar"] *, [data-baseweb="calendar"] *::before, [data-baseweb="calendar"] *::after{
+  color: var(--lv-text) !important; background-color: transparent !important; }
+[data-baseweb="popover"]:has([data-baseweb="calendar"]){ background: var(--lv-pop) !important; border-radius:12px; }
+[data-baseweb="calendar"] [aria-selected="true"], [data-baseweb="calendar"] [aria-selected="true"] *{
+  background-color: var(--lv-accent) !important; color: var(--lv-on-accent) !important; }
+[data-baseweb="calendar"] [aria-disabled="true"], [data-baseweb="calendar"] [aria-disabled="true"] *{ color: var(--lv-dim) !important; }
+
+/* ---------- sidebar rows: fixed height so the selected one never overlaps its neighbours ---------- */
+[class*="st-key-nav_"]{ height:2.05rem; min-height:2.05rem; }
+[class*="st-key-nav_"] a{ height:2.05rem !important; max-height:2.05rem; box-sizing:border-box; min-height:0 !important; }
+
+/* ---------- chat: bubbles on glass, input ring on the container instead of the text area ---------- */
+[data-testid="stChatMessage"]{ background: var(--lv-surface) !important; border:1px solid var(--lv-border); border-radius:16px;
+  padding:.8rem 1rem; margin-bottom:.55rem; }
+[data-testid="stChatInput"] *{ outline:none !important; box-shadow:none !important; }
+[data-testid="stChatInput"]:focus-within{ border-color: var(--lv-accent) !important; box-shadow: 0 0 0 1px var(--lv-accent), 0 8px 28px var(--lv-shade) !important; }
+
+/* ---------- calendar: the side column sits on a glass panel ---------- */
+.st-key-cal_side .st-key-cal_mini{ background: var(--lv-surface); border:1px solid var(--lv-edge); border-radius:26px; padding:1rem .8rem 1.1rem;
+  backdrop-filter: var(--lv-glass); -webkit-backdrop-filter: var(--lv-glass); box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 8px 28px var(--lv-shade); }
+
+
+/* ---------- sidebar clock, pinned bottom-left ---------- */
+.lvclk{ color: var(--lv-text); line-height:1.15; }
+.lvclk .t{ font-family: var(--lv-serif, Georgia, serif); font-size:1.9rem; font-weight:600; letter-spacing:-.01em; white-space:nowrap; font-variant-numeric: lining-nums tabular-nums; color: var(--lv-text); }
+.lvclk .t.sm{ font-size:1.1rem; } .lvclk-row .ap{ font-size:.78rem; margin-left:.1rem; }
+.lvclk .ap{ font-size:.95rem; font-weight:600; margin-left:.15rem; }
+.lvclk .s{ font-family: inherit; font-size:.9rem; font-weight:600; margin-left:.3rem; color: var(--lv-muted); }
+.lvclk .dt{ font-size:.82rem; font-weight:500; color: var(--lv-muted); margin-top:.15rem; }
+.lvclk-row{ display:flex; align-items:center; justify-content:center; gap:.5rem; min-width:0; }
+.lvclk-txt{ min-width:0; flex:0 1 auto; } .lvclk-txt .dt{ white-space:normal; font-size:.76rem; }
+.lvclk-a{ flex:none; display:block; width:56px !important; height:56px !important; } .lvclk-a .rim{ stroke: var(--lv-edge); stroke-width:1.5; } .lvclk-a .tk{ stroke: var(--lv-muted); }
+.lvclk-a .hh{ stroke: var(--lv-text); } .lvclk-a .sh{ stroke: var(--lv-accent); } .lvclk-a .sd{ fill: var(--lv-accent); }
+.st-key-side_clock{ padding:.55rem .8rem .5rem; background: var(--lv-surface-2); box-shadow: 0 6px 20px var(--lv-shade); border:1px solid var(--lv-edge);
+  border-radius:22px; backdrop-filter: var(--lv-glass); -webkit-backdrop-filter: var(--lv-glass); }
+[data-testid="stSidebarUserContent"]{ display:flex; flex-direction:column; min-height:calc(100vh - 5rem); }
+[data-testid="stSidebarUserContent"] > div{ flex:1 1 auto; display:flex; flex-direction:column; }
+[data-testid="stSidebarUserContent"] > div > [data-testid="stVerticalBlock"]{ flex:1 1 auto; }
+[data-testid="stLayoutWrapper"]:has(> .st-key-side_clock){ margin-top:auto; flex:0 0 auto !important; }
+.st-key-side_clock{ flex:0 0 auto !important; box-sizing:border-box; }
+.st-key-side_clock iframe{ display:block; border:0; background:transparent; width:100%; }
+.st-key-side_clock [data-testid="stElementContainer"]{ margin:0; }
+.st-key-side_clock, .st-key-side_clock > div, .st-key-side_clock [data-testid="stVerticalBlock"], .st-key-side_clock [data-testid="stElementContainer"],
+.st-key-side_clock [data-testid="stMarkdown"]{ height:auto !important; min-height:0 !important; max-height:none !important; overflow:visible !important; }
+.st-key-side_clock{ padding:.7rem .95rem .75rem !important; }
+.st-key-side_clock, .st-key-side_clock *{ flex-shrink:0 !important; }
+.st-key-side_clock [data-testid="stMarkdownContainer"], .st-key-side_clock [data-testid="stMarkdown"]{ margin:0 !important; }
+.st-key-side_clock [data-testid="stElementContainer"], .st-key-side_clock [data-testid="stMarkdown"]{ height:auto !important; }
+[data-testid="stSidebarUserContent"]{ overflow-y:auto; }
+
+/* ---------- account flyout: appearance block and a compact availability list ---------- */
+.lv-pm-sub{ font-size:.78rem; color:var(--lv-muted); font-weight:600; padding:.45rem .2rem .25rem; }
+.st-key-pm_look{ padding:0 .3rem .2rem; }
+[class*="st-key-pm_st_"] button{ min-height:1.85rem !important; padding:.15rem .6rem !important; }
+[class*="st-key-pm_st_"] button p{ font-size:.82rem !important; }
+[class*="st-key-pm_st_"] [data-testid="stIconMaterial"]{ font-size:1rem !important; }
+.lv-pm-label{ padding:.4rem .6rem .15rem !important; }
+[data-testid="stPopoverBody"]:has(.lv-pm-head) [class*="st-key-pm_st_"] button{ min-height:1.55rem !important; padding:.05rem .6rem !important; gap:.55rem; }
+[data-testid="stPopoverBody"]:has(.lv-pm-head) [class*="st-key-pm_st_"] button p{ font-size:.8rem !important; line-height:1.2; }
+[data-testid="stPopoverBody"]:has(.lv-pm-head) [class*="st-key-pm_st_"] [data-testid="stIconMaterial"]{ font-size:.95rem !important; }
+[data-testid="stPopoverBody"]:has(.lv-pm-head) [data-testid="stVerticalBlock"]{ gap:0 !important; }
+.st-key-side_settings{ padding:.35rem .2rem 0; }
+.st-key-side_settings [data-testid="stPageLink-NavLink"]{ display:flex; align-items:center; gap:.6rem; padding:.45rem .8rem; border-radius:10px; }
+.st-key-side_settings [data-testid="stPageLink-NavLink"]:hover{ background: var(--lv-hover); }
+.st-key-side_settings [data-testid="stPageLink-NavLink"] p{ color: var(--lv-text); font-size:.9rem; font-weight:500; }
+.st-key-side_settings [data-testid="stIconMaterial"]{ color: var(--lv-muted); }
+
 /* ---------- keyboard focus + reduced motion ---------- */
 :is(button, a, input, textarea, select, [role="tab"], [role="option"]):focus-visible,
 [data-baseweb="input"]:focus-within, [data-baseweb="textarea"]:focus-within, [data-baseweb="select"] > div:focus-within{
   outline: 2px solid var(--lv-accent) !important; outline-offset: 2px; }
+[data-testid="stChatInput"] textarea:focus-visible, [data-testid="stChatInput"] [data-baseweb]:focus-within{
+  outline: none !important; }
 ::selection{ background: var(--lv-pill); }
 @media (max-width: 760px){
   h1, .lv-title{ font-size: 1.9rem !important; }
@@ -379,10 +540,13 @@ h1, .lv-title{ font-size: 2.4rem !important; line-height:1.1; }
 """
 
 
-def _css(theme: str) -> str:
+def _css(theme: str, hue=None) -> str:
     out = _CSS
     for k, v in THEMES[valid_theme(theme)].items():
-        out = out.replace(f"__{k}__", v)
+        out = out.replace(f"__{k}__", v if k in _KEEP else shift_hue(v, hue))
+    # the few teal colours written straight into the stylesheet (avatars, progress bars)
+    for base in ("#94dcd2", "#367074"):
+        out = out.replace(base, shift_hue(base, hue))
     return out
 
 
@@ -390,9 +554,24 @@ def esc(s) -> str:
     return html.escape("" if s is None else str(s), quote=True)
 
 
-def inject_css(theme: str | None = None):
-    """Inject the stylesheet for `theme` (default: the session's theme, else dark)."""
-    st.markdown(_css(theme or st.session_state.get("theme", DEFAULT_THEME)), unsafe_allow_html=True)
+def inject_css(theme: str | None = None, hue=None):
+    """Inject the stylesheet for `theme` (default: the session's theme, else dark), tinted to `hue` if one is given."""
+    th = valid_theme(theme or st.session_state.get("theme", DEFAULT_THEME))
+    st.markdown(_css(th, hue), unsafe_allow_html=True)
+    dark_guard(THEMES[th]["SCHEME"])
+
+
+def dark_guard(scheme: str):
+    """Stop browser dark-mode features (Chrome's 'Auto Dark Mode for Web Contents', Dark Reader, Edge/Brave force-dark)
+    from recolouring the app. LawVault paints its own light and dark themes; a second, automatic inversion on top
+    turns white text black and flips images. We declare the page's colour scheme and opt out of extension re-colouring."""
+    import streamlit.components.v1 as components
+    components.html(
+        '<script>try{const d=window.parent.document,h=d.head,s=%r;'
+        'const set=(n,c)=>{let m=h.querySelector(`meta[name="${n}"]`);if(!m){m=d.createElement("meta");m.name=n;h.appendChild(m)}m.content=c};'
+        'set("color-scheme",s);set("supported-color-schemes",s);set("darkreader-lock","");'
+        'd.documentElement.style.colorScheme=s;'
+        '}catch(e){}</script>' % scheme, height=1)
 
 
 def html_block(markup: str):

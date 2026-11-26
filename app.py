@@ -3,7 +3,7 @@ from pathlib import Path
 import streamlit as st
 import auth, calsync, db, i18n, jobs, notify, presence, session_cookie, subscription, ui
 from i18n import t
-from views import auth_ui, dashboard, cases_ui, calendar_ui, ai_ui, admin, settings, profile, account_menu, notifications_ui, legal_ui, files_ui, news_ui, detector_ui
+from views import auth_ui, dashboard, cases_ui, calendar_ui, ai_ui, admin, settings, profile, account_menu, notifications_ui, legal_ui, files_ui, news_ui, detector_ui, tools_ui
 
 ASSETS = Path(__file__).parent / "assets"
 st.set_page_config(page_title="LawVault", page_icon=str(ASSETS / "icon.svg"), layout="wide")
@@ -22,7 +22,8 @@ _sync_worker()
 # 1) Which session is this? Tab memory first, then the cookie (survives refresh).
 token = st.session_state.get("token") or session_cookie.read()
 user = auth.validate_session(token)
-ui.inject_css(ui.valid_theme(user["theme"]) if user else st.session_state.get("theme"))  # per-user glass theme
+ui.inject_css(ui.valid_theme(user["theme"]) if user else st.session_state.get("theme"),
+              subscription.accent_hue(user) if user else None)  # per-user glass theme and accent colour
 if not user:
     if st.session_state.get("token"):
         st.toast("Session expired. Please log in again.")
@@ -55,6 +56,7 @@ pages = {
     "news": st.Page(news_ui.render, title=t("News"), icon=":material/newspaper:", url_path="news"),
     "detector": st.Page(detector_ui.render, title=t("AI detector"), icon=":material/fingerprint:",
                         url_path="detector"),
+    "tools": st.Page(tools_ui.render, title=t("Tools"), icon=":material/build:", url_path="tools"),
     "qa": st.Page(ai_ui.qa, title=t("Legal assistant"), icon=":material/auto_awesome:", url_path="qa"),
     "docs": st.Page(ai_ui.analyzer, title=t("Document review"), icon=":material/description:", url_path="docs"),
     "profile": st.Page(profile.render, title=t("Profile"), icon=":material/account_circle:", url_path="profile"),
@@ -65,7 +67,7 @@ pages = {
 if user["role"] == "admin":
     pages["admin"] = st.Page(admin.render, title=t("Admin"), icon=":material/admin_panel_settings:",
                              url_path="admin")
-GROUPS = [(t("Workspace"), ["dashboard", "cases", "calendar", "files", "news"]),
+GROUPS = [(t("Workspace"), ["dashboard", "cases", "calendar", "files", "tools", "news"]),
           (t("AI"), ["analysis", "qa", "docs", "detector"])]
 # Every page is registered, but the list in the sidebar is drawn by hand (account_menu.nav): Profile,
 # Notifications, Settings and Admin are reached from the account menu only.
@@ -112,5 +114,7 @@ with st.sidebar:
     account_menu.render(user, token, pages, unread)
     account_menu.nav(pages, GROUPS, nav.title)
     live_bar(token)
+    account_menu.clock(user)
+    account_menu.settings_link(pages)
     ai_activity(user["id"], nav.url_path)
 nav.run()

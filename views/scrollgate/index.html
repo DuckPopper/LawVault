@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<meta name="darkreader-lock">
+<script>try{const s=getComputedStyle(window.parent.document.documentElement).colorScheme||"dark";document.documentElement.style.colorScheme=s;const m=document.createElement("meta");m.name="color-scheme";m.content=s;document.head.appendChild(m)}catch(e){}</script>
+
+<style>
+  html,body{margin:0;padding:0;background:transparent;font-family:"Source Sans Pro",-apple-system,system-ui,sans-serif;}
+  #box{height:380px;overflow-y:auto;border-radius:14px;padding:6px 22px 18px;box-sizing:border-box;border:1px solid var(--edge);
+       background:var(--bg);color:var(--text);line-height:1.6;font-size:14.5px;scroll-behavior:smooth;}
+  #box h3{font-size:1.15rem;margin:1.4rem 0 .2rem;} #box h4{font-size:.98rem;margin:1.2rem 0 .3rem;}
+  #box p,#box li{color:var(--text);} #box .m{color:var(--muted);font-size:.85rem;}
+  #box ul{padding-left:1.2rem;margin:.3rem 0;}
+  #bar{height:4px;border-radius:4px;background:var(--edge);margin:10px 2px 6px;overflow:hidden;}
+  #fill{height:100%;width:0;background:var(--accent);transition:width .12s;}
+  #hint{font-size:12.5px;color:var(--muted);text-align:center;}
+  #hint.ok{color:var(--accent);font-weight:600;}
+</style></head>
+<body>
+<div id="box"></div><div id="bar"><div id="fill"></div></div><div id="hint"></div>
+<script>
+const send=(type,data)=>window.parent.postMessage(Object.assign({isStreamlitMessage:true,type},data),"*");
+const box=document.getElementById("box"),fill=document.getElementById("fill"),hint=document.getElementById("hint");
+let done=false,labels={};
+function check(){
+  const max=box.scrollHeight-box.clientHeight;
+  const p=max<=0?1:box.scrollTop/max;
+  fill.style.width=Math.min(100,Math.round(p*100))+"%";
+  if(!done&&(max<=0||box.scrollTop>=max-6)){
+    done=true;hint.textContent=labels.done;hint.className="ok";
+    send("streamlit:setComponentValue",{value:true,dataType:"json"});
+  }
+}
+box.addEventListener("scroll",check);
+window.addEventListener("message",e=>{
+  if(!e.data||e.data.type!=="streamlit:render")return;
+  const a=e.data.args,r=document.documentElement.style;
+  for(const k of ["bg","text","muted","edge","accent"])r.setProperty("--"+k,a[k]);
+  if(box.dataset.v!==a.version){box.innerHTML=a.html;box.dataset.v=a.version;}
+  labels=a.labels;
+  if(a.already){done=true;fill.style.width="100%";hint.textContent=labels.done;hint.className="ok";}
+  else if(!done){hint.textContent=labels.todo;}
+  send("streamlit:setFrameHeight",{height:430});
+  setTimeout(check,50);
+});
+send("streamlit:componentReady",{apiVersion:1});
+</script></body></html>

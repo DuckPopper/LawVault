@@ -7,3 +7,5 @@ __pycache__/
 data-demo/
 .DS_Store
 .pytest_cache/
+presentation/
+auth copy.py

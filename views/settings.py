@@ -2,7 +2,7 @@
 import datetime as dt
 import json
 import streamlit as st
-import ai, auth, crypto, i18n, presence, privacy, session_cookie, subscription, twofa, ui, voice
+import ai, auth, colorwheel, crypto, i18n, presence, privacy, session_cookie, subscription, twofa, ui, voice
 from i18n import t
 from views.policy import policy
 
@@ -68,6 +68,33 @@ def _ago(ts):
 
 
 # ---------- sections ----------
+def _appearance(u):
+    """Accent colour wheel: Pro and Firm only. The dark theme keeps its black and the light theme its white;
+    only the tinted colours (the green-teal) follow the wheel."""
+    _group("Appearance")
+    allowed = subscription.can_customize_theme(u)
+    saved = ui.valid_hue(u["accent_hue"]) if allowed else None
+    r = _row("Accent colour", "Pick a colour on the wheel. The dark theme stays black and the light theme stays white; "
+                              "the green follows your colour.")
+    nonce = st.session_state.setdefault("accent_nonce", 0)
+    with r:
+        if not allowed:
+            st.caption(t("The colour wheel is included in the Pro and Firm plans."), help=None)
+            if st.button(t("See plans"), key="accent_see_plans", icon=":material/lock:", use_container_width=True):
+                st.session_state["settings_section"] = "Billing"
+                st.rerun()
+        elif st.button(t("Reset to default"), key="accent_reset", icon=":material/restart_alt:",
+                       disabled=saved is None, use_container_width=True):
+            auth.set_accent(u["id"], None)
+            st.session_state["accent_nonce"] = nonce + 1
+            st.rerun()
+    with st.container(key="accent_wheel_box"):
+        got = colorwheel.pick(saved if saved is not None else ui.BASE_HUE, key=f"accent_wheel_{nonce}",
+                              disabled=not allowed)
+    if allowed and got is not None and got != saved and auth.set_accent(u["id"], got):
+        st.rerun()
+
+
 def _general(u):
     _h("General")
     _group("Language")
@@ -81,16 +108,7 @@ def _general(u):
         i18n.set_lang(pick)
         st.rerun()
 
-    _group("Appearance")
-    cur_theme = ui.valid_theme(u["theme"])
-    r = _row("Theme", "Dark or light. Saved to your account, so it follows you to other devices.")
-    theme = r.segmented_control(t("Theme"), ["dark", "light"], default=cur_theme, key="set_theme",
-                                format_func=lambda m: t("Dark") if m == "dark" else t("Light"),
-                                label_visibility="collapsed", width="stretch") or cur_theme
-    if theme != cur_theme:
-        auth.set_theme(u["id"], theme)
-        st.session_state["theme"] = theme
-        st.rerun()
+    _appearance(u)
 
     _group("Voice input")
     cur_voice = voice.get_lang(u)
@@ -174,16 +192,6 @@ def _two_factor(u):
 
 def _account(u):
     _h("Account")
-    _group("Status")
-    cur = presence.get_choice(u["id"])
-    r = _row("Status", "Invisible shows you as offline. Do Not Disturb collects notifications without pop-ups.")
-    choice = r.selectbox(t("Status"), presence.CHOICES, index=presence.CHOICES.index(cur),
-                         format_func=lambda c: t(presence.CHOICE_LABEL[c]), key="set_status",
-                         label_visibility="collapsed")
-    if choice != cur:
-        presence.set_choice(u["id"], choice)
-        st.toast(t("Status updated."))
-
     _group("Security")
     r = _row("Password", "Changing it signs you out everywhere.")
     with r.popover(t("Change password"), use_container_width=True):

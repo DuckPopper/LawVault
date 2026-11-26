@@ -26,6 +26,13 @@ CREATE TABLE IF NOT EXISTS case_members(
   case_id TEXT NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   role TEXT NOT NULL DEFAULT 'member', added_at REAL NOT NULL, PRIMARY KEY(case_id, user_id));
+CREATE TABLE IF NOT EXISTS case_invites(
+  case_id TEXT NOT NULL REFERENCES cases(id) ON DELETE CASCADE, email TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'editor', invited_by TEXT NOT NULL, created_at REAL NOT NULL,
+  PRIMARY KEY(case_id, email));
+CREATE TABLE IF NOT EXISTS contacts(
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, email TEXT NOT NULL,
+  name_enc TEXT NOT NULL DEFAULT '', added_at REAL NOT NULL, PRIMARY KEY(user_id, email));
 CREATE TABLE IF NOT EXISTS messages(
   id INTEGER PRIMARY KEY AUTOINCREMENT, case_id TEXT NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, body_enc TEXT NOT NULL, ts REAL NOT NULL);
@@ -109,7 +116,9 @@ MIGRATIONS = [
     ("legal_work", "matter", "TEXT"),
     ("users", "lang", "TEXT NOT NULL DEFAULT 'en'"),
     ("users", "plan_config", "TEXT"),                              # JSON for the pick-your-own plan
+    ("users", "clock", "TEXT NOT NULL DEFAULT 'digital'"),         # sidebar clock: digital or analog
     ("users", "theme", "TEXT NOT NULL DEFAULT 'dark'"),          # glass theme: dark or light
+    ("users", "accent_hue", "INTEGER"),                           # custom accent colour, 0-359 (NULL = default teal)
     ("users", "voice_lang", "TEXT NOT NULL DEFAULT 'auto'"),       # Whisper language hint
     ("events", "location_enc", "TEXT"),
     ("events", "updated_at", "REAL"),

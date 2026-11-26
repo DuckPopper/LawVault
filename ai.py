@@ -1,4 +1,4 @@
-"""Gemini (free tier) client with prompt-injection defence, PII redaction and quota enforcement."""
+"""Gemini (free tier) client, with Groq as automatic backup, plus prompt-injection defence, PII redaction and quota enforcement."""
 from __future__ import annotations
 import requests
 import config, crypto, db, i18n, privacy, subscription
@@ -39,10 +39,8 @@ def system_for(user_or_lang=None) -> str:
     return SYSTEM + i18n.ai_note(code)
 
 
-def _call(contents: list, system: str = SYSTEM):
-    """Returns (text, ok). ok=False means nothing useful came back, so the quota is refunded."""
-    if not config.GEMINI_API_KEY:
-        return "AI is not configured. Add GEMINI_API_KEY to your .env file (free key: aistudio.google.com).", False
+def _gemini(contents: list, system: str):
+    """Returns (text, error). text is None when every Gemini model failed."""
     body = {"system_instruction": {"parts": [{"text": system}]}, "contents": contents,
             "generationConfig": {"temperature": 0.2, "maxOutputTokens": 8192}}
     error = "The AI service is unavailable right now. Please try again later."
@@ -59,10 +57,50 @@ def _call(contents: list, system: str = SYSTEM):
             r.raise_for_status()
             parts = r.json()["candidates"][0]["content"]["parts"]
             text = "".join(p.get("text", "") for p in parts).strip()
-            return (text, True) if text else ("No answer was produced.", False)
+            if text:
+                return text, error
         except Exception:
             continue
-    return error, False
+    return None, error
+
+
+def _groq(contents: list, system: str):
+    """Backup provider (OpenAI-compatible API). Returns text, or None if it is not configured or failed."""
+    if not config.GROQ_API_KEY:
+        return None
+    messages = [{"role": "system", "content": system}]
+    for c in contents:
+        messages.append({"role": "assistant" if c.get("role") == "model" else "user",
+                         "content": "".join(p.get("text", "") for p in c.get("parts", []))})
+    for model in [config.GROQ_MODEL] + [m for m in config.GROQ_FALLBACK_MODELS if m != config.GROQ_MODEL]:
+        try:
+            r = requests.post("https://api.groq.com/openai/v1/chat/completions",
+                              headers={"Authorization": f"Bearer {config.GROQ_API_KEY}"},
+                              json={"model": model, "messages": messages, "temperature": 0.2, "max_tokens": 4096},
+                              timeout=config.GEMINI_TIMEOUT)
+            if r.status_code in (400, 404, 413, 429, 500, 503):  # too big, busy, limited or retired: next model
+                continue
+            r.raise_for_status()
+            text = (r.json()["choices"][0]["message"]["content"] or "").strip()
+            if text:
+                return text
+        except Exception:
+            continue
+    return None
+
+
+def _call(contents: list, system: str = SYSTEM):
+    """Returns (text, ok). Tries Gemini first, then the Groq backup. ok=False means nothing useful came back,
+    so the quota is refunded."""
+    if not config.GEMINI_API_KEY and not config.GROQ_API_KEY:
+        return "AI is not configured. Add GEMINI_API_KEY to your .env file (free key: aistudio.google.com).", False
+    error = "The AI service is unavailable right now. Please try again later."
+    if config.GEMINI_API_KEY:
+        text, error = _gemini(contents, system)
+        if text:
+            return text, True
+    text = _groq(contents, system)
+    return (text, True) if text else (error, False)
 
 
 def ask(user, question: str, history: list):

@@ -74,9 +74,34 @@ def _go_today():
     st.session_state["cal_anchor"] = dt.date.today()
 
 
-def _jump():
-    if st.session_state.get("cal_jump"):
-        st.session_state["cal_anchor"] = st.session_state["cal_jump"]
+def _pick(day: dt.date):
+    st.session_state["cal_anchor"] = day
+
+
+def _shift_month(step: int):
+    a = _anchor()
+    m = a.month - 1 + step
+    st.session_state["cal_anchor"] = dt.date(a.year + m // 12, m % 12 + 1, 1)
+
+
+def _mini_month(m0, mdays, sel_start, sel_end, busy):
+    """The small month in the side column, styled like the macOS calendar. Every day is a button: click one to jump there."""
+    today = dt.date.today()
+    with st.container(key="cal_mini"):
+        nav = st.columns([1, 4, 1], vertical_alignment="center")
+        nav[0].button(" ", icon=":material/chevron_left:", key="minav_prev", on_click=_shift_month, args=(-1,))
+        nav[1].markdown(f'<div class="lvmini-t">{i18n.month_name(m0.month)} {m0.year}</div>', unsafe_allow_html=True)
+        nav[2].button(" ", icon=":material/chevron_right:", key="minav_next", on_click=_shift_month, args=(1,))
+        head = st.columns(7)
+        for col, c in zip(head, i18n.weekday_initials()):
+            col.markdown(f'<div class="lvmini-h">{ui.esc(c)}</div>', unsafe_allow_html=True)
+        for w in range(0, len(mdays), 7):
+            cols = st.columns(7)
+            for col, d in zip(cols, mdays[w:w + 7]):
+                flags = ("_fS" if sel_start <= d < sel_end else "") + ("_fT" if d == today else "") + \
+                        ("_fO" if d.month != m0.month else "") + ("_fH" if d in busy else "")
+                col.button(str(d.day), key=f"mini_{d:%Y%m%d}{flags}", on_click=_pick, args=(d,),
+                           help=i18n.date_full(d), use_container_width=True)
 
 
 def _title(view: str, first: dt.date, last_excl: dt.date, anchor: dt.date) -> str:
@@ -210,17 +235,14 @@ def _calendar(u):
     if flash:
         st.toast(flash)
 
-    side, main = st.columns([1, 4.3], gap="medium")
+    side, main = st.columns([1.35, 4.3], gap="medium")
     with side, st.container(key="cal_side"):
         m0 = dt.date(anchor.year, anchor.month, 1)
         mdays = grid.month_days(m0.year, m0.month)
         ms = dt.datetime.combine(mdays[0], dt.time(0)).timestamp()
         mitems = _my_items(u, ms, ms + 42 * 86400)
         busy = {dt.date.fromtimestamp(e["start"]) for e in mitems}
-        st.markdown(grid.mini_month(m0.year, m0.month, first if view != "Month" else m0,
-                                    last if view != "Month" else m0, busy), unsafe_allow_html=True)
-        st.date_input("Go to date", value=None, key="cal_jump", on_change=_jump, format="YYYY-MM-DD",
-                      label_visibility="collapsed")
+        _mini_month(m0, mdays, first if view != "Month" else m0, last if view != "Month" else m0, busy)
         st.markdown(grid.legend(), unsafe_allow_html=True)
         n_inv = len(cal.pending_invites(u["id"]))
         if n_inv:

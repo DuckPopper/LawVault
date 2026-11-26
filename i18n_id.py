@@ -20,6 +20,12 @@ ID = {
     "Admin": "Admin",
     "Status": "Status",
     "Language": "Bahasa",
+    "Accent colour": "Warna aksen",
+    "Pick a colour on the wheel. The dark theme stays black and the light theme stays white; the green follows your colour.":
+        "Pilih warna di roda warna. Tema gelap tetap hitam dan tema terang tetap putih; warna hijau mengikuti pilihan Anda.",
+    "The colour wheel is included in the Pro and Firm plans.": "Roda warna termasuk dalam paket Pro dan Firm.",
+    "See plans": "Lihat paket",
+    "Reset to default": "Kembalikan ke bawaan",
     "Interface language": "Bahasa antarmuka",
     "Log out": "Keluar",
     "Light mode": "Mode terang",
@@ -143,8 +149,18 @@ ID = {
     "Invalid role.": "Peran tidak valid.",
     "Only the case owner can add members.": "Hanya pemilik kasus yang dapat menambah anggota.",
     "Member limit reached for your plan.": "Batas anggota untuk paket Anda tercapai.",
-    "If that lawyer has a LawVault account, they now have access.":
-        "Jika advokat tersebut memiliki akun LawVault, kini mereka memiliki akses.",
+    "If that lawyer has a LawVault account, they now have access. Otherwise they are invited and join the case when they sign up.":
+        "Jika advokat tersebut memiliki akun LawVault, kini mereka memiliki akses. Jika belum, mereka diundang dan bergabung ke perkara saat mendaftar.",
+    "My contacts": "Kontak saya",
+    "Coworkers and friends you work with. Only you can see this list.": "Rekan kerja dan teman Anda. Hanya Anda yang dapat melihat daftar ini.",
+    "Name (optional)": "Nama (opsional)",
+    "Save contact": "Simpan kontak",
+    "Add from contacts": "Tambah dari kontak",
+    "Add": "Tambah",
+    "Contact saved.": "Kontak disimpan.",
+    "That is your own email.": "Itu email Anda sendiri.",
+    "Contact limit reached.": "Batas kontak tercapai.",
+    "Invited, not signed up yet": "Diundang, belum mendaftar",
     "You need editor access to upload to this case.": "Anda memerlukan akses editor untuk mengunggah ke kasus ini.",
     "Document limit reached for your plan.": "Batas dokumen untuk paket Anda tercapai.",
     "Uploaded.": "Terunggah.",
@@ -953,7 +969,7 @@ ID.update({
     "Firm or organization": "Firma atau organisasi", "e.g. Senior associate": "mis. Associate senior",
     "Save profile": "Simpan profil", "Profile saved.": "Profil disimpan.",
     "Language, appearance, status and security are in Settings.": "Bahasa, tampilan, status, dan keamanan ada di Pengaturan.",
-    "Open settings": "Buka pengaturan", "Appearance": "Tampilan", "Theme": "Tema", "Dark": "Gelap", "Light": "Terang",
+    "Open settings": "Buka pengaturan", "Appearance": "Tampilan", "Clock": "Jam", "Digital": "Digital", "Analog": "Analog", "Theme": "Tema", "Dark": "Gelap", "Light": "Terang",
     "Dark or light. Saved to your account, so it follows you to other devices.":
         "Gelap atau terang. Tersimpan di akun Anda, jadi ikut ke perangkat lain.",
     "Show": "Tampilkan", "All": "Semua", "Unread": "Belum dibaca", "No unread notifications.": "Tidak ada notifikasi belum dibaca.",
@@ -973,4 +989,149 @@ ID.update({
     "⚪ Appear offline": "⚪ Tampil offline",
     "Change your availability and status message from the account menu at the top of the sidebar. Language, appearance and security are in Settings.":
         "Ubah ketersediaan dan pesan status dari menu akun di bagian atas sidebar. Bahasa, tampilan, dan keamanan ada di Pengaturan.",
+})
+# ---------- Tools tab (2026-11-26) ----------
+ID.update({
+    "Tools": "Alat",
+    "Everyday utilities for documents: zip, merge, watermark, sign and draft e-mails.":
+        "Alat harian untuk dokumen: zip, gabung, tanda air, tanda tangan, dan draf e-mail.",
+    "Zipper": "Zip", "PDF pages": "Halaman PDF", "Watermark": "Tanda air", "Sign PDF": "Tanda tangan PDF",
+    "E-mail draft": "Draf e-mail",
+    "Coming next: background remover, image editor, audio transcriber, PDF text editing.":
+        "Segera hadir: penghapus latar, editor gambar, transkripsi audio, penyuntingan teks PDF.",
+    "Something went wrong with that file. Please try another.": "Terjadi masalah pada berkas itu. Coba berkas lain.",
+    "Too large (max {mb} MB): {names}": "Terlalu besar (maks {mb} MB): {names}",
+    "Drop any files and get one .zip. Everything stays on this server and is not saved.":
+        "Letakkan berkas apa pun dan dapatkan satu .zip. Semua tetap di server ini dan tidak disimpan.",
+    "Files to zip": "Berkas untuk di-zip", "Zip name": "Nama zip", "That is too much to zip at once.":
+        "Terlalu banyak untuk di-zip sekaligus.",
+    "{n} file(s), {kb} KB in, {zkb} KB zipped": "{n} berkas, {kb} KB masuk, {zkb} KB setelah di-zip",
+    "Download zip": "Unduh zip", "Merge": "Gabung", "Pick, reorder, rotate": "Pilih, urutkan, putar", "Split": "Pisah",
+    "PDFs to merge, in order": "PDF yang digabung, sesuai urutan", "Add at least two PDFs to merge.":
+        "Tambahkan minimal dua PDF untuk digabung.",
+    "Download merged PDF": "Unduh PDF gabungan", "PDF": "PDF", "{n} pages.": "{n} halaman.",
+    "Pages to keep, in the order you want them": "Halaman yang dipertahankan, sesuai urutan yang diinginkan",
+    "Leave empty to keep all. 3,1,2 puts page 3 first. Leave a page out to delete it.":
+        "Kosongkan untuk mempertahankan semua. 3,1,2 menaruh halaman 3 di depan. Lewatkan halaman untuk menghapusnya.",
+    "Rotate": "Putar", "Download PDF": "Unduh PDF", "Pages per file": "Halaman per berkas",
+    "This makes {n} file(s), delivered as one zip.": "Ini menghasilkan {n} berkas, dikirim sebagai satu zip.",
+    "Download split pages (zip)": "Unduh halaman terpisah (zip)", "PDF or image": "PDF atau gambar",
+    "Watermark text": "Teks tanda air", "Colour": "Warna", "Opacity": "Opasitas", "Text size": "Ukuran teks",
+    "Angle": "Sudut", "Repeat across the page": "Ulangi di seluruh halaman",
+    "Download watermarked PDF": "Unduh PDF bertanda air", "Download watermarked image": "Unduh gambar bertanda air",
+    "Preview, page {n}": "Pratinjau, halaman {n}",
+    "Place your signature on a PDF. Check the preview, then download. For a legally binding e-signature with an audit trail, use a signing service.":
+        "Tempatkan tanda tangan Anda pada PDF. Periksa pratinjau, lalu unduh. Untuk tanda tangan elektronik yang mengikat secara hukum dengan jejak audit, gunakan layanan tanda tangan.",
+    "PDF to sign": "PDF untuk ditandatangani", "Signature": "Tanda tangan", "Type it": "Ketik",
+    "Upload a picture": "Unggah gambar",
+    "A photo or scan of your signature on white paper": "Foto atau pindaian tanda tangan Anda di kertas putih",
+    "Your name": "Nama Anda", "Style": "Gaya", "Ink": "Tinta", "Classic": "Klasik", "Formal": "Formal",
+    "Brush": "Kuas", "Handwritten": "Tulisan tangan",
+    "Create a signature above, then place it.": "Buat tanda tangan di atas, lalu tempatkan.",
+    "Page": "Halaman", "Left to right": "Kiri ke kanan", "Top to bottom": "Atas ke bawah", "Size": "Ukuran",
+    "Download signed PDF": "Unduh PDF bertanda tangan",
+    "Tell the AI what the e-mail is about and it drafts the subject and body. You send it from your own mail app, so nothing is sent from here. Names, numbers and other personal details are masked before the AI sees them.":
+        "Beri tahu AI isi e-mail dan AI menyusun subjek serta isinya. Anda mengirimnya dari aplikasi e-mail sendiri, jadi tidak ada yang terkirim dari sini. Nama, nomor, dan data pribadi lain disamarkan sebelum dilihat AI.",
+    "What should the e-mail say?": "Apa isi e-mail?",
+    "e.g. Ask opposing counsel to extend the filing deadline by two weeks because our expert is travelling.":
+        "mis. Minta kuasa hukum lawan memperpanjang tenggat pengajuan dua minggu karena ahli kami sedang bepergian.",
+    "To (name or address)": "Kepada (nama atau alamat)", "Tone": "Nada", "Friendly": "Ramah", "Firm": "Tegas",
+    "Brief": "Singkat", "Write in": "Tulis dalam",
+    "Attach context from a file (optional)": "Sertakan konteks dari berkas (opsional)", "None": "Tidak ada",
+    "Draft e-mail": "Buat draf e-mail", "Drafting…": "Menyusun…", "Subject": "Subjek", "Body": "Isi",
+    "AI-generated. Read it and fill in anything in [brackets] before sending.":
+        "Dibuat oleh AI. Baca dan lengkapi bagian dalam [tanda kurung] sebelum mengirim.",
+    "Open in mail app": "Buka di aplikasi e-mail", "Open in Gmail": "Buka di Gmail", "Download .txt": "Unduh .txt",
+    # messages raised by tools.py
+    "Add at least one file.": "Tambahkan minimal satu berkas.",
+    "That page selection isn't valid. Use numbers like 1-3, 5, 8-.":
+        "Pilihan halaman tidak valid. Gunakan angka seperti 1-3, 5, 8-.",
+    "This PDF is password-protected. Remove the password first.":
+        "PDF ini dilindungi kata sandi. Hapus kata sandinya terlebih dahulu.",
+    "This PDF has too many pages for this tool.": "PDF ini terlalu banyak halaman untuk alat ini.",
+    "That file isn't a readable PDF.": "Berkas itu bukan PDF yang dapat dibaca.",
+    "That file isn't a readable image.": "Berkas itu bukan gambar yang dapat dibaca.",
+    "Rotation must be 0, 90, 180 or 270 degrees.": "Rotasi harus 0, 90, 180, atau 270 derajat.",
+    "Enter the watermark text.": "Masukkan teks tanda air.", "Type your name first.": "Ketik nama Anda terlebih dahulu.",
+    "No ink found in that picture. Use dark ink on light paper.":
+        "Tidak ada tinta pada gambar itu. Gunakan tinta gelap di kertas terang.",
+    "That page doesn't exist.": "Halaman itu tidak ada.",
+    "Say what the e-mail is about.": "Jelaskan isi e-mail.",
+})
+ID.update({
+    "All tools": "Semua alat", "Soon": "Segera",
+    "Merge PDF": "Gabung PDF", "Combine PDFs in the order you want.": "Gabungkan PDF sesuai urutan yang Anda mau.",
+    "Split PDF": "Pisah PDF", "Separate a PDF into single pages or equal parts.": "Pisahkan PDF menjadi halaman tunggal atau bagian sama besar.",
+    "Organize PDF": "Atur PDF", "Sort, delete or pull out pages, in any order.": "Urutkan, hapus, atau ambil halaman, dalam urutan apa pun.",
+    "Rotate PDF": "Putar PDF", "Turn every page the way you need it.": "Putar setiap halaman sesuai kebutuhan.",
+    "Stamp text over a PDF or image. Choose colour, opacity and position.": "Bubuhkan teks pada PDF atau gambar. Pilih warna, opasitas, dan posisi.",
+    "Place your signature: click the page, drag it, resize it.": "Tempatkan tanda tangan: klik halaman, seret, ubah ukuran.",
+    "Zip files": "Zip berkas", "Put a bunch of files in, get one zip out.": "Masukkan banyak berkas, dapatkan satu zip.",
+    "AI writes the subject and body, you send it from your own mail app.": "AI menulis subjek dan isi, Anda mengirimnya dari aplikasi e-mail sendiri.",
+    "Compress PDF": "Kompres PDF", "Reduce file size while keeping quality.": "Kecilkan ukuran berkas dengan kualitas tetap terjaga.",
+    "PDF to Word": "PDF ke Word", "Turn a PDF into an editable document.": "Ubah PDF menjadi dokumen yang dapat diedit.",
+    "Edit PDF": "Edit PDF", "Add text, shapes and notes to a PDF.": "Tambahkan teks, bentuk, dan catatan pada PDF.",
+    "Background remover": "Penghapus latar", "Cut the background out of a photo.": "Hapus latar belakang dari foto.",
+    "Image editor": "Editor gambar", "Crop, resize and adjust images.": "Potong, ubah ukuran, dan atur gambar.",
+    "Transcribe audio": "Transkripsi audio", "Speech to text. Video subtitles later.": "Ucapan ke teks. Subtitel video menyusul.",
+    "Click the page to place your signature. Drag to move, pull the dot to resize.":
+        "Klik halaman untuk menempatkan tanda tangan. Seret untuk memindah, tarik titik untuk mengubah ukuran.",
+})
+ID.update({
+    "For a legally binding e-signature with an audit trail, use a signing service.":
+        "Untuk tanda tangan elektronik yang mengikat secara hukum dengan jejak audit, gunakan layanan tanda tangan.",
+})
+ID.update({
+    "JPG to PDF": "JPG ke PDF", "Turn photos and scans into one PDF.": "Ubah foto dan pindaian menjadi satu PDF.",
+    "PDF to JPG": "PDF ke JPG", "Save each page as an image.": "Simpan setiap halaman sebagai gambar.",
+    "Page numbers": "Nomor halaman", "Add page numbers: position, style, start.": "Tambah nomor halaman: posisi, gaya, awal.",
+    "Crop PDF": "Pangkas PDF", "Trim the margins of every page.": "Pangkas margin setiap halaman.",
+    "Protect PDF": "Lindungi PDF", "Lock a PDF with a password (AES-256).": "Kunci PDF dengan kata sandi (AES-256).",
+    "Unlock PDF": "Buka kunci PDF", "Remove a password you know from a PDF.": "Hapus kata sandi yang Anda ketahui dari PDF.",
+    "Images, in page order": "Gambar, sesuai urutan halaman", "Page size": "Ukuran halaman", "Same as image": "Sama dengan gambar",
+    "Margin": "Margin", "Format": "Format", "Quality": "Kualitas", "Pages (optional)": "Halaman (opsional)",
+    "Download image": "Unduh gambar", "{n} images, delivered as one zip.": "{n} gambar, dikirim sebagai satu zip.",
+    "Download images (zip)": "Unduh gambar (zip)", "Password": "Kata sandi",
+    "At least 6 characters. If you lose it, nobody can recover the file.": "Minimal 6 karakter. Jika hilang, tidak ada yang dapat memulihkan berkas.",
+    "Download protected PDF": "Unduh PDF terlindungi",
+    "You need the password. This removes it so the PDF opens freely.": "Anda memerlukan kata sandinya. Ini menghapusnya agar PDF terbuka bebas.",
+    "Password-protected PDF": "PDF berkata sandi", "Download unlocked PDF": "Unduh PDF tanpa kunci",
+    "Position": "Posisi", "Bottom center": "Bawah tengah", "Bottom right": "Bawah kanan", "Bottom left": "Bawah kiri",
+    "Top center": "Atas tengah", "Top right": "Atas kanan", "Top left": "Atas kiri",
+    "Page 3": "Halaman 3", "Page 3 of 12": "Halaman 3 dari 12", "Start at": "Mulai dari",
+    "Don't number the first page": "Jangan beri nomor pada halaman pertama", "Download numbered PDF": "Unduh PDF bernomor",
+    "Top (%)": "Atas (%)", "Bottom (%)": "Bawah (%)", "Left (%)": "Kiri (%)", "Right (%)": "Kanan (%)",
+    "Download cropped PDF": "Unduh PDF terpangkas", "Compression": "Kompresi", "Light": "Ringan", "Balanced": "Seimbang",
+    "Strong": "Kuat", "{a} KB to {b} KB ({p}% smaller)": "{a} KB menjadi {b} KB ({p}% lebih kecil)",
+    "This PDF is already as small as this tool can make it.": "PDF ini sudah sekecil yang dapat dicapai alat ini.",
+    "Download compressed PDF": "Unduh PDF terkompresi",
+    "Add at least one image.": "Tambahkan minimal satu gambar.", "Too many images at once.": "Terlalu banyak gambar sekaligus.",
+    "Convert at most 100 pages at a time. Use the page selection.": "Konversi maksimal 100 halaman sekaligus. Gunakan pilihan halaman.",
+    "Use a password of at least 6 characters.": "Gunakan kata sandi minimal 6 karakter.",
+    "This PDF has no password.": "PDF ini tidak memiliki kata sandi.", "That password is wrong.": "Kata sandi itu salah.",
+    "Crop each side by 0 to 45 percent.": "Pangkas tiap sisi 0 sampai 45 persen.",
+})
+ID.update({
+    "Add text, boxes, highlights and whiteouts on the page itself.": "Tambahkan teks, kotak, sorotan, dan penutup langsung pada halaman.",
+    "Whiteout covers what is underneath; it does not remove the text. For sensitive data, redact instead.":
+        "Penutup putih hanya menutupi tampilan; teks di bawahnya tidak dihapus. Untuk data sensitif, gunakan redaksi.",
+    "PDF to edit": "PDF yang diedit",
+    "Pick a tool, then click or drag on the page. Drag to move, pull the dot to resize.":
+        "Pilih alat, lalu klik atau seret pada halaman. Seret untuk memindah, tarik titik untuk mengubah ukuran.",
+    "Edits on page(s): {pages}": "Perubahan pada halaman: {pages}", "Download edited PDF": "Unduh PDF yang diedit",
+    "Nothing to apply yet. Add some text or shapes first.": "Belum ada yang diterapkan. Tambahkan teks atau bentuk dahulu.",
+})
+ID.update({
+    "Crop, rotate, resize and adjust images.": "Potong, putar, ubah ukuran, dan atur gambar.",
+    "Image": "Gambar", "Flip": "Balik", "Left-right": "Kiri-kanan", "Up-down": "Atas-bawah", "Save as": "Simpan sebagai",
+    "Crop and resize": "Potong dan ubah ukuran", "Set the width (pixels)": "Atur lebar (piksel)", "Width": "Lebar",
+    "Adjust": "Atur", "Brightness": "Kecerahan", "Contrast": "Kontras", "Colour": "Warna", "Black and white": "Hitam putih",
+    "Method": "Metode", "Plain background": "Latar polos", "Smart (AI)": "Pintar (AI)",
+    "Works best on a plain background (white paper, studio backdrop). For busy photos the smart AI method is available once an administrator installs it (pip install rembg onnxruntime).":
+        "Paling baik pada latar polos (kertas putih, latar studio). Untuk foto yang ramai, metode AI pintar tersedia setelah administrator memasangnya (pip install rembg onnxruntime).",
+    "Tolerance": "Toleransi", "Higher removes more colours that are close to the background.": "Lebih tinggi menghapus lebih banyak warna yang mirip latar.",
+    "Edge softness": "Kehalusan tepi", "Preview (the checkerboard is transparent)": "Pratinjau (kotak-kotak berarti transparan)",
+    "Download PNG": "Unduh PNG",
+    "The smart remover isn't installed on this server.": "Penghapus pintar belum terpasang di server ini.",
+    "Couldn't find a plain background to remove. Try a higher tolerance.": "Tidak menemukan latar polos untuk dihapus. Coba toleransi lebih tinggi.",
 })

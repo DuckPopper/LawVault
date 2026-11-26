@@ -291,3 +291,35 @@ def test_upload_validation():
     assert docutil.extract_text("a.exe", b"x")[1]
     assert docutil.extract_text("big.txt", b"a" * (config.MAX_UPLOAD_BYTES + 1))[1]
     assert docutil.extract_text("ok.txt", b"hello")[0] == "hello"
+
+def test_invite_unregistered_email_joins_after_login():
+    import auth, db
+    a = make_user("a@x.com")
+    cid, _ = cases.create_case(a, "Case")
+    ok, _msg = cases.add_member(a, cid, "new@x.com", "viewer")
+    assert ok and [i["email"] for i in cases.pending_invites(a["id"], cid)] == ["new@x.com"]
+    n = make_user("new@x.com")
+    assert cases.get_case(n["id"], cid) is None           # signing up alone grants nothing
+    auth.finish_login(n["id"])                             # after both factors
+    assert cases.get_case(n["id"], cid)["role"] == "viewer"
+    assert cases.pending_invites(a["id"], cid) == []
+
+def test_pending_invites_owner_only_and_cancellable():
+    a, b = make_user("a@x.com"), make_user("b@x.com")
+    cid, _ = cases.create_case(a, "Case")
+    cases.add_member(a, cid, "b@x.com")
+    cases.add_member(a, cid, "ghost@x.com")
+    assert cases.pending_invites(b["id"], cid) == []
+    assert not cases.cancel_invite(b["id"], cid, "ghost@x.com")
+    assert cases.cancel_invite(a["id"], cid, "ghost@x.com")
+
+def test_contacts_private_and_auto_saved():
+    import contacts
+    a, b = make_user("a@x.com"), make_user("b@x.com")
+    assert contacts.add(a["id"], "friend@x.com", "Fran")[0]
+    assert not contacts.add(a["id"], "not-an-email")[0] and not contacts.add(a["id"], "a@x.com")[0]
+    cid, _ = cases.create_case(a, "Case")
+    cases.add_member(a, cid, "b@x.com")
+    assert {c["email"] for c in contacts.listing(a["id"])} == {"friend@x.com", "b@x.com"}
+    assert contacts.listing(b["id"]) == []
+    assert contacts.remove(a["id"], "friend@x.com") and not contacts.remove(b["id"], "b@x.com")

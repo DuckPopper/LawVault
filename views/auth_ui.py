@@ -1,9 +1,11 @@
 import base64
 from pathlib import Path
 import streamlit as st
+import streamlit.components.v1 as components
 import auth, i18n, otp, session_cookie, twofa
 from i18n import t
-from views.policy import policy
+import ui
+from views import terms
 
 _PENDING = ("pending_uid", "pending_email", "pending_method", "dev_code", "otp_msg")
 
@@ -19,6 +21,25 @@ def _clear_pending():
         st.session_state.pop(k, None)
 
 
+_GATE = components.declare_component("lv_scrollgate", path=str(Path(__file__).resolve().parent / "scrollgate"))
+
+
+@st.dialog("Terms & Conditions", width="large")
+def _terms_dialog():
+    st.caption(t("Please read to the end. The accept button unlocks when you reach the bottom."))
+    th = ui.THEMES[ui.valid_theme(st.session_state.get("theme"))]
+    reached = _GATE(html=terms.terms_html(), version=terms.TERMS_VERSION, bg=th["POP"], text=th["TEXT"],
+                    muted=th["MUTED"], edge=th["EDGE"], accent=th["ACCENT"], already=False,
+                    labels={"todo": "↓ Scroll to the bottom to continue", "done": "✓ You've reached the end"},
+                    key="terms_gate", default=False)
+    c1, c2 = st.columns(2)
+    if c1.button(t("I have read and accept"), type="primary", use_container_width=True, disabled=not reached):
+        st.session_state["terms_ok"] = terms.TERMS_VERSION
+        st.rerun()
+    if c2.button(t("Cancel"), use_container_width=True):
+        st.rerun()
+
+
 _LOGO = Path(__file__).resolve().parent.parent / "assets" / "logo.svg"
 _CSS = """<style>
 [data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"]{ display:none; }
@@ -31,21 +52,10 @@ _CSS = """<style>
 </style>"""
 
 
-def _lang_picker():
-    codes = list(i18n.LANGS)
-    cur = i18n.lang()
-    choice = st.segmented_control(t("Language"), codes, default=cur, format_func=i18n.LANGS.get, key="auth_lang",
-                                  label_visibility="collapsed")
-    if choice and choice != cur:
-        i18n.set_lang(choice)
-        st.rerun()
-
-
 def render():
     st.markdown(_CSS, unsafe_allow_html=True)
     _, mid, _ = st.columns([1, 1.25, 1])
     with mid:
-        _lang_picker()
         logo = base64.b64encode(_LOGO.read_bytes()).decode()
         st.markdown(f'<div class="lv-auth-logo"><img src="data:image/svg+xml;base64,{logo}" alt="LawVault"></div>'
                     f'<div class="lv-auth-sub">{t("The secure workspace for legal teams")}</div>', unsafe_allow_html=True)
@@ -74,7 +84,8 @@ def _render_forms():
                                         otp_msg="Open your authenticator app and enter the 6-digit code.")
                 st.rerun()
             else:
-                ok, m, dev = auth.start_login_otp(uid, email)
+                with st.spinner(t("Sending your code…")):
+                    ok, m, dev = auth.start_login_otp(uid, email)
                 if ok:
                     st.session_state.update(pending_uid=uid, pending_email=email, pending_method="email",
                                             dev_code=dev, otp_msg=m)
@@ -86,12 +97,20 @@ def _render_forms():
         email = st.text_input(t("Email"), key="su_email")
         pw = st.text_input(t("Password (10+ chars, letter + number)"), type="password", key="su_pw")
         _strength(pw)
-        with st.expander(t("Privacy policy")):
-            st.markdown(policy())
-        consent = st.checkbox(t("I have read and accept the privacy policy"))
+        accepted = st.session_state.get("terms_ok") == terms.TERMS_VERSION
+        if accepted:
+            st.success(t("You accepted the Terms & Conditions and Privacy Policy."), icon=":material/verified:")
+        else:
+            if st.button(t("Read Terms & Conditions and Privacy Policy"), icon=":material/description:",
+                         use_container_width=True):
+                _terms_dialog()
+            st.caption(t("You must open and read them to the end before you can create an account."))
+        consent = accepted
         if st.button(t("Create account"), type="primary", use_container_width=True):
             with st.spinner(t("Checking password against known breaches…")):
                 ok, msg = auth.signup(email, pw, consent, i18n.lang())
+            if ok:
+                st.session_state.pop("terms_ok", None)
             (st.success if ok else st.error)(i18n.tm(msg))
 
     with t_reset:

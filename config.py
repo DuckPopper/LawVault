@@ -13,12 +13,20 @@ DB_PATH = DATA_DIR / "lawvault.db"
 
 DEV_MODE = os.getenv("DEV_MODE", "1") == "1"
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "").strip().lower()
+LEGAL_ENTITY = os.getenv("LEGAL_ENTITY", "LawVault").strip()          # name of the company running the service (shown in the Terms)
+SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "").strip() or ADMIN_EMAIL    # where users send legal / privacy requests
+GOVERNING_LAW = os.getenv("GOVERNING_LAW", "the Republic of Indonesia").strip()
 HIBP_CHECK = os.getenv("HIBP_CHECK", "1") == "1"
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")  # fast; "thinking" models can take ~50 s
 # Tried in order when the main model is busy (503), rate-limited (429), retired (404) or too slow
 GEMINI_FALLBACK_MODELS = [m.strip() for m in os.getenv(
     "GEMINI_FALLBACK_MODELS", "gemini-flash-lite-latest,gemini-3.5-flash").split(",") if m.strip()]
+# Backup AI (Groq, OpenAI-compatible): used automatically when Gemini is down, busy, rate-limited or out of quota.
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+GROQ_FALLBACK_MODELS = [m.strip() for m in os.getenv(
+    "GROQ_FALLBACK_MODELS", "openai/gpt-oss-20b,qwen/qwen3.8-27b").split(",") if m.strip()]
 GEMINI_TIMEOUT = int(os.getenv("GEMINI_TIMEOUT", "30"))  # seconds per model before trying the next
 # Voice to text (Whisper). "openai" sends the clip to OpenAI's API; "local" runs faster-whisper on this machine so
 # audio never leaves it (pip install faster-whisper).

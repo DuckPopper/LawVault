@@ -1,0 +1,70 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<meta name="darkreader-lock">
+<script>try{const s=getComputedStyle(window.parent.document.documentElement).colorScheme||"dark";document.documentElement.style.colorScheme=s;const m=document.createElement("meta");m.name="color-scheme";m.content=s;document.head.appendChild(m)}catch(e){}</script>
+
+<style>
+  html,body{margin:0;background:transparent;font-family:'Instrument Sans',system-ui,sans-serif;overflow:hidden}
+  #wrap{position:relative;margin:0 auto;user-select:none;-webkit-user-select:none;touch-action:none;
+        box-shadow:0 6px 28px rgba(0,0,0,.35);border-radius:6px;overflow:hidden;cursor:crosshair;background:#fff}
+  #page{display:block;width:100%;height:auto;pointer-events:none}
+  #sig{position:absolute;display:none;cursor:move;outline:1.5px dashed #3aa6a0;outline-offset:3px;touch-action:none}
+  #sig img{display:block;width:100%;height:auto;pointer-events:none}
+  #h{position:absolute;right:-9px;bottom:-9px;width:16px;height:16px;border-radius:50%;background:#3aa6a0;
+     border:2px solid #fff;cursor:nwse-resize;touch-action:none;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+  #hint{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:rgba(20,30,30,.82);color:#fff;
+        font-size:12.5px;padding:5px 12px;border-radius:999px;pointer-events:none;transition:opacity .3s;white-space:nowrap}
+</style></head>
+<body>
+<div id="wrap"><img id="page" alt=""><div id="sig"><img id="sigimg" alt=""><div id="h"></div></div><div id="hint"></div></div>
+<script>
+const $=id=>document.getElementById(id);
+const wrap=$("wrap"), page=$("page"), sig=$("sig"), sigimg=$("sigimg"), hint=$("hint");
+let S={x:.75,y:.88,w:.22}, token=null, ratio=1, ready=false, lastSent="";
+function send(type,extra){window.parent.postMessage(Object.assign({isStreamlitMessage:true,type},extra),"*")}
+function setValue(){const v=JSON.stringify(S); if(v===lastSent)return; lastSent=v;
+  send("streamlit:setComponentValue",{value:{x:S.x,y:S.y,w:S.w},dataType:"json"})}
+function dims(){return {W:wrap.clientWidth,H:wrap.clientHeight}}
+function draw(){
+  const {W,H}=dims(); if(!W||!ready)return;
+  const w=S.w*W, h=w*ratio;
+  sig.style.display="block"; sig.style.width=w+"px";
+  sig.style.left=(S.x*W-w/2)+"px"; sig.style.top=(S.y*H-h/2)+"px";
+}
+function clamp(){S.w=Math.min(Math.max(S.w,.04),.9); S.x=Math.min(Math.max(S.x,0),1); S.y=Math.min(Math.max(S.y,0),1)}
+function frame(){send("streamlit:setFrameHeight",{height:wrap.clientHeight+24})}
+function load(a){
+  const maxW=Math.min(a.max_width||820, 1200);
+  wrap.style.width="min(100%,"+maxW+"px)";
+  if(a.token!==token){
+    token=a.token; S={x:a.x,y:a.y,w:a.w}; ready=false; lastSent=JSON.stringify(S);
+    hint.style.opacity=1; hint.textContent=a.hint||"Click the page to place. Drag to move. Pull the dot to resize.";
+    let n=2; const done=()=>{ if(--n) return; ratio=sigimg.naturalHeight/sigimg.naturalWidth; ready=true; draw(); frame(); };
+    page.onload=done; sigimg.onload=done;
+    page.src="data:image/png;base64,"+a.page; sigimg.src="data:image/png;base64,"+a.sig;
+  }
+}
+// click anywhere on the page: move the signature there
+wrap.addEventListener("pointerdown",e=>{
+  if(!ready||e.target===$("h"))return;
+  const r=wrap.getBoundingClientRect();
+  if(e.target.closest&&e.target.closest("#sig")){ // start dragging
+    const sx=e.clientX, sy=e.clientY, ox=S.x, oy=S.y; hint.style.opacity=0;
+    const mv=ev=>{S.x=ox+(ev.clientX-sx)/r.width; S.y=oy+(ev.clientY-sy)/r.height; clamp(); draw()};
+    const up=()=>{removeEventListener("pointermove",mv); removeEventListener("pointerup",up); setValue()};
+    addEventListener("pointermove",mv); addEventListener("pointerup",up); e.preventDefault(); return;
+  }
+  S.x=(e.clientX-r.left)/r.width; S.y=(e.clientY-r.top)/r.height; clamp(); hint.style.opacity=0; draw(); setValue();
+});
+// the dot: resize, keeping the signature's centre
+$("h").addEventListener("pointerdown",e=>{
+  e.stopPropagation(); e.preventDefault(); if(!ready)return;
+  const r=wrap.getBoundingClientRect(), sx=e.clientX, ow=S.w, ox=S.x, oy=S.y; hint.style.opacity=0;
+  const mv=ev=>{S.w=ow+2*(ev.clientX-sx)/r.width; S.x=ox; S.y=oy; clamp(); draw()};
+  const up=()=>{removeEventListener("pointermove",mv); removeEventListener("pointerup",up); setValue()};
+  addEventListener("pointermove",mv); addEventListener("pointerup",up);
+});
+addEventListener("resize",()=>{draw();frame()});
+addEventListener("message",e=>{ if(e.data&&e.data.type==="streamlit:render") load(e.data.args) });
+send("streamlit:componentReady",{apiVersion:1});
+</script></body></html>

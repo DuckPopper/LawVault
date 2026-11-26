@@ -34,15 +34,6 @@ def render():
     c4.markdown(ui.stat("AI requests today", f"{used} / {lim['daily_ai']}", t("{plan} plan", plan=t(lim["name"])),
                         used / max(1, lim["daily_ai"])), unsafe_allow_html=True)
 
-    inv, req = len(cal.pending_invites(u["id"])), len(cal.incoming_requests(u["id"]))
-    if inv or req:
-        with st.container(key="dash_cal"):
-            a, b = st.columns([5, 1], vertical_alignment="center")
-            a.info(t("{inv} meeting invitation(s) and {req} calendar request(s) need a response.", inv=inv, req=req),
-                   icon=":material/event_note:")
-            if "calendar" in pages and b.button(t("Open calendar"), use_container_width=True):
-                st.switch_page(pages["calendar"])
-
     left, right = st.columns([5, 4], gap="large")
     with left:
         ui.section("Today")
@@ -79,5 +70,3 @@ def render():
         rows = [ui.item(c["title"], t(c["role"].title())) for c in my[:6]]
         ui.html_block(f'<div class="lv-card"><div class="lv-list">{"".join(rows)}</div>'
                       f'{"" if rows else "<div class=lv-empty>" + ui.esc(t("No cases yet. Create one under Cases.")) + "</div>"}</div>')
-        if my and "cases" in pages and st.button(t("Open cases"), icon=":material/arrow_forward:"):
-            st.switch_page(pages["cases"])

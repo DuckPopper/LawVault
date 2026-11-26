@@ -116,6 +116,13 @@ def register_device(user_id: str, user_agent: str) -> bool:
 def finish_login(user_id: str, user_agent: str = "", ip: str = "", device_label: str = "") -> str:
     """Called after BOTH factors pass. Creates the session and raises a new-device alert if needed."""
     token = create_session(user_id, user_agent, ip)
+    try:  # both factors passed, so the email is proven: pending case invites for it become memberships
+        import cases
+        with db.conn() as c:
+            em = c.execute("SELECT email FROM users WHERE id=?", (user_id,)).fetchone()["email"]
+        cases.accept_pending(user_id, em)
+    except Exception:
+        db.audit("accept_pending_failed", user_id)
     if register_device(user_id, user_agent):
         msg = f"New sign-in to your account from {device_label or 'a new device'}" + (f" ({ip})" if ip else "") + \
               ". If this wasn't you, change your password and log out all devices."
@@ -191,6 +198,25 @@ def set_theme(user_id: str, theme: str) -> bool:
         return False
     with db.conn() as c:
         c.execute("UPDATE users SET theme=? WHERE id=?", (theme, user_id))
+    return True
+
+
+def set_accent(user_id: str, hue) -> bool:
+    """Save the accent hue (None resets to the default). Refused unless the plan includes the customizer."""
+    import subscription
+    with db.conn() as c:
+        row = c.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
+        if not row or not subscription.can_customize_theme(row):
+            return False
+        c.execute("UPDATE users SET accent_hue=? WHERE id=?", (None if hue is None else int(hue) % 360, user_id))
+    return True
+
+
+def set_clock(user_id: str, mode: str) -> bool:
+    if mode not in ("digital", "analog"):
+        return False
+    with db.conn() as c:
+        c.execute("UPDATE users SET clock=? WHERE id=?", (mode, user_id))
     return True
 
 
